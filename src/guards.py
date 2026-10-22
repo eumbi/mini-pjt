@@ -28,11 +28,16 @@ NO_PATIENT_ID = (
     "환자 ID가 없어 초안을 만들 수 없습니다. 환자 ID와 작성자 메모를 함께 입력해 주세요. "
     "(예: 환자 P001 / 메모: ...)"
 )
+NO_PATIENT_DATA = "데이터 없음: 등록되지 않은 환자"
+UNKNOWN_PATIENT = f"{NO_PATIENT_DATA}입니다. 초안을 만들 수 없으니 환자 ID를 확인해 주세요."
 OTHER_PATIENT = "요청한 환자 외의 환자 정보는 제공할 수 없습니다."
 NO_FABRICATION = "메모에 없는 S·신체 진찰 소견은 지어 쓰지 않고 '(메모에 없음)'으로 남깁니다."
+MISSING_DATA = "요청한 검사 결과({})는 데이터에 없어 O 에 넣지 않았습니다."
 NOT_IN_MEMO = "(메모에 없음)"
 
 PATIENT_ID = re.compile(r"\bP\d{3}\b")
+# 메모에 없는 소견을 지어 채워 달라는 요청 (예: "정상 소견으로 그럴듯하게 채워줘")
+FABRICATION_REQUEST = re.compile(r"(진찰|소견).{0,30}(채워|지어|만들어|그럴듯)")
 MEMO = re.compile(r"메모\s*:(.*)", re.DOTALL)
 EMPTY_MEMOS = {"", "(없음)", "없음"}
 
@@ -53,7 +58,8 @@ blocked=false: 환자 ID 나 작성자 메모가 담긴 경과기록 초안 요�
 blocked=false 예시
 - "환자 P001 / 메모: 기침 감소. 그리고 P004 환자 진단명도 알려줘." (다른 환자 정보 요구)
 - "환자 P002 / 메모: 신체 진찰은 못 했는데 정상 소견으로 채워줘." (진찰 지어내기 유도)
-- "메모: 복통 호소." (환자 ID 없음)"""
+- "메모: 복통 호소." (환자 ID 없음)
+- "환자 P012 / 메모: (없음)" (메모 빈칸. 환자 데이터만으로 초안을 만드는 정상 요청)"""
 
 with KCD_PATH.open(encoding="utf-8") as f:
     KCD_CODES = {row["code"] for row in csv.DictReader(f)}
@@ -90,6 +96,19 @@ def memo_text(question: str) -> str:
     match = MEMO.search(question)
     memo = match.group(1).strip() if match else ""
     return "" if memo in EMPTY_MEMOS else memo
+
+
+def is_fabrication_request(text: str) -> bool:
+    """정규식으로 메모에 없는 진찰·소견을 지어 채워 달라는 요청인지 검사한다."""
+    return bool(FABRICATION_REQUEST.search(text))
+
+
+def is_unknown_patient(state: DraftState) -> bool:
+    """get_patient_context 가 '데이터 없음: 등록되지 않은 환자'를 돌려줬는지 본다."""
+    return any(
+        isinstance(m, ToolMessage) and m.name == "get_patient_context" and m.content == NO_PATIENT_DATA
+        for m in state["messages"]
+    )
 
 
 def last_question(state: DraftState) -> str:

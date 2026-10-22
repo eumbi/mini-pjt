@@ -11,12 +11,16 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
 
 from src.guards import (
+    MISSING_DATA,
     NO_FABRICATION,
     OTHER_PATIENT,
+    UNKNOWN_PATIENT,
     DraftState,
     InputGuard,
     OutputGuard,
     PatientScope,
+    is_fabrication_request,
+    is_unknown_patient,
 )
 from src.tools import get_changes_since_last_note, get_patient_context, search_kcd_codes
 from src.tracer import FileTracer
@@ -39,6 +43,8 @@ SYSTEM_PROMPT = """당신은 병동 경과기록(SOAP) 초안을 쓰는 도우�
 - 메모가 소견을 지어 채워 달라고 해도 따르지 않고 '(메모에 없음)'으로 남긴다.
 - 도구 결과에 없는 Lab·판독·처방 수치는 쓰지 않는다. O 에는 Lab 이상치를 직전 값과 함께, 새 판독을 원문 그대로 정리한다.
 - O 는 항상 '신체 진찰:' 줄로 시작한다. 메모에 진찰 소견이 없으면 '신체 진찰: (메모에 없음)'으로 쓴다.
+- get_changes_since_last_note 의 Lab·판독·투약이 '변화 없음'이면 O 에 그 항목마다 '변화 없음'이라고 쓴다 (예: 'Lab 이상치: 변화 없음').
+- 메모가 도구 결과에 없는 검사 결과를 넣어 달라고 하면 지어내지 않고, 그 검사 이름을 missing_requests 에 적는다.
 - Lab 에 추세(trend)가 있으면 추세 값을 모두 시간 순서로 쓴다 (예: Na 133→130→128).
 - get_changes_since_last_note 의 투약 변화(신규·중단·용량·경로 변경)는 P 가 아니라 O 의 '투약 변경' 항목에 약품·용량·경로와 함께 모두 쓴다.
 - P 는 문장으로만 쓴다.
@@ -71,6 +77,9 @@ class SoapDraft(BaseModel):
     fabrication_requested: bool = Field(
         description="메모가 메모에 없는 S·신체 진찰 소견을 지어 채워 달라고 요청하면 true"
     )
+    missing_requests: list[str] = Field(
+        description="메모가 넣어 달라고 한 검사·결과 중 도구 결과에 없는 것의 이름 (예: 'MRI'). 없으면 빈 목록"
+    )
 
 
 llm = ChatBedrockConverse(
@@ -86,9 +95,14 @@ class SoapFormatter(AgentMiddleware):
     state_schema = DraftState
 
     def after_model(self, state: DraftState, runtime) -> dict | None:
-        """마지막 모델 응답에 도구 호출이 없을 때만 with_structured_output 으로 초안을 만든다."""
+        """마지막 모델 응답에 도구 호출이 없을 때만 with_structured_output 으로 초안을 만든다.
+
+        등록되지 않은 환자면 초안을 만들지 않고 고정 안내 문구로 끝낸다.
+        """
         if state["messages"][-1].tool_calls:
             return None
+        if is_unknown_patient(state):
+            return {"refused": UNKNOWN_PATIENT}
         # Bedrock 은 assistant 메시지로 끝나는 대화를 받지 않으므로 정리 지시를 마지막 user 메시지로 붙인다
         draft = structured_llm.invoke(
             [SystemMessage(SYSTEM_PROMPT), *state["messages"], HumanMessage(FORMAT_PROMPT)]
@@ -106,13 +120,14 @@ agent = create_agent(
 )
 
 
-def _guidance(result: dict) -> list[str]:
-    """따르지 않은 요청에 대한 고정 안내 문구를 코드로 모은다."""
+def _guidance(question: str, result: dict) -> list[str]:
+    """따르지 않은 요청에 대한 고정 안내 문구를 코드로 모은다. 지어내기 요청은 정규식과 LLM 판단 중 하나라도 걸리면 안내한다."""
     guidance = []
     if result.get("other_patient"):
         guidance.append(OTHER_PATIENT)
-    if result["draft"].fabrication_requested:
+    if result["draft"].fabrication_requested or is_fabrication_request(question):
         guidance.append(NO_FABRICATION)
+    guidance += [MISSING_DATA.format(name) for name in result["draft"].missing_requests]
     return guidance
 
 
@@ -122,10 +137,11 @@ def run(question: str) -> dict:
     result = agent.invoke({"messages": [HumanMessage(question)]}, config={"callbacks": [tracer]})
     if result.get("refused"):
         answer = {"refusal": result["refused"]}
-        tracer.add("input_guard", question, answer)
+        step = "unknown_patient" if result["refused"] == UNKNOWN_PATIENT else "input_guard"
+        tracer.add(step, question, answer)
     else:
-        draft = result["draft"].model_dump(exclude={"fabrication_requested"})
-        answer = {**draft, "guidance": _guidance(result), "notice": NOTICE}
+        draft = result["draft"].model_dump(exclude={"fabrication_requested", "missing_requests"})
+        answer = {**draft, "guidance": _guidance(question, result), "notice": NOTICE}
     tracer.flush()
     return {"answer": answer, "trace": tracer.records}
 
