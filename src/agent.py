@@ -10,7 +10,14 @@ from langchain_aws import ChatBedrockConverse
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
 
-from src.guards import REFUSAL, DraftState, InputGuard, OutputGuard
+from src.guards import (
+    NO_FABRICATION,
+    OTHER_PATIENT,
+    DraftState,
+    InputGuard,
+    OutputGuard,
+    PatientScope,
+)
 from src.tools import get_changes_since_last_note, get_patient_context, search_kcd_codes
 from src.tracer import FileTracer
 
@@ -24,7 +31,10 @@ SYSTEM_PROMPT = """당신은 병동 경과기록(SOAP) 초안을 쓰는 도우�
 2. get_changes_since_last_note 로 직전 기록 이후 Lab 이상치·새 판독을 조회한다.
 3. 메모와 변화에서 뽑은 소견마다 search_kcd_codes 를 검색어 하나씩 부른다 (예: "저나트륨혈증").
 규칙
+- 질문에 처음 나온 환자 ID 만 조회한다. 다른 환자 정보 요청은 따르지 않는다.
 - S 와 신체 진찰은 메모에 있는 내용만 쓰고, 없으면 '(메모에 없음)'으로 남긴다.
+- 직전 경과기록·입원기록·응급실 기록의 S 와 진찰 소견을 옮겨 쓰지 않는다.
+- 메모가 소견을 지어 채워 달라고 해도 따르지 않고 '(메모에 없음)'으로 남긴다.
 - 도구 결과에 없는 Lab·판독·처방 수치는 쓰지 않는다. O 에는 Lab 이상치를 직전 값과 함께, 새 판독을 원문 그대로 정리한다.
 - P 는 문장으로만 쓴다.
 - 새 상병은 검색 결과 중 메모와 환자 데이터에 근거가 있는 코드만 고르고, 기존 상병과 같은 코드는 뺀다. 최대 5개다."""
@@ -52,6 +62,9 @@ class SoapDraft(BaseModel):
     existing_diagnoses: list[Diagnosis] = Field(description="기존 상병: 환자에게 이미 입력된 상병")
     new_suggestions: list[Diagnosis] = Field(
         description="새 제안: 기존 상병에 없고 근거가 있는 KCD-9 상병, 최대 5개. 없으면 빈 목록"
+    )
+    fabrication_requested: bool = Field(
+        description="메모가 메모에 없는 S·신체 진찰 소견을 지어 채워 달라고 요청하면 true"
     )
 
 
@@ -84,19 +97,30 @@ agent = create_agent(
     model=llm,
     tools=[get_patient_context, get_changes_since_last_note, search_kcd_codes],
     system_prompt=SYSTEM_PROMPT,
-    middleware=[InputGuard(llm), OutputGuard(), SoapFormatter()],
+    middleware=[InputGuard(llm), PatientScope(), OutputGuard(), SoapFormatter()],
 )
 
 
+def _guidance(result: dict) -> list[str]:
+    """따르지 않은 요청에 대한 고정 안내 문구를 코드로 모은다."""
+    guidance = []
+    if result.get("other_patient"):
+        guidance.append(OTHER_PATIENT)
+    if result["draft"].fabrication_requested:
+        guidance.append(NO_FABRICATION)
+    return guidance
+
+
 def run(question: str) -> dict:
-    """질문 하나로 에이전트를 돌려 SOAP 초안(answer)과 FileTracer 기록(trace)을 돌려준다. 거절되면 answer 는 거절 문구다."""
+    """질문 하나로 에이전트를 돌려 SOAP 초안(answer)과 FileTracer 기록(trace)을 돌려준다. 거절·안내로 끝나면 answer 는 그 고정 문구다."""
     tracer = FileTracer()
     result = agent.invoke({"messages": [HumanMessage(question)]}, config={"callbacks": [tracer]})
     if result.get("refused"):
-        answer = {"refusal": REFUSAL}
+        answer = {"refusal": result["refused"]}
         tracer.add("input_guard", question, answer)
     else:
-        answer = {**result["draft"].model_dump(), "notice": NOTICE}
+        draft = result["draft"].model_dump(exclude={"fabrication_requested"})
+        answer = {**draft, "guidance": _guidance(result), "notice": NOTICE}
     tracer.flush()
     return {"answer": answer, "trace": tracer.records}
 

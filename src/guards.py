@@ -1,7 +1,10 @@
 """입력·출력 가드레일 미들웨어.
 
-입력: before_agent 에서 정규식 + LLM 판별로 인젝션·무관한 요청을 고정 문구로 거절한다.
-출력: 새 제안이 KCD-9 에 있는 코드인지, 5개 이하인지 after_model 에서 코드로 검사한다.
+입력: before_agent 에서 정규식 + LLM 판별로 인젝션·무관한 요청을 고정 문구로 거절하고,
+      환자 ID 가 없으면 고정 안내 문구로 끝낸다.
+도구: 요청한 환자 외의 환자 ID 로 도구를 부르면 실행하지 않는다.
+출력: 새 제안이 KCD-9 에 있는 코드인지, 5개 이하인지 after_model 에서 코드로 검사하고,
+      메모가 비었으면 S 를 '(메모에 없음)'으로 고정한다.
 """
 
 import csv
@@ -10,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from langchain.agents.middleware import AgentMiddleware, AgentState, hook_config
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from pydantic import BaseModel, Field
 from typing_extensions import NotRequired
 
@@ -21,6 +24,17 @@ REFUSAL = (
     "이 요청은 처리할 수 없습니다. 경과기록 초안을 만들려면 환자 ID와 작성자 메모를 입력해 주세요. "
     "(예: 환자 P001 / 메모: ...)"
 )
+NO_PATIENT_ID = (
+    "환자 ID가 없어 초안을 만들 수 없습니다. 환자 ID와 작성자 메모를 함께 입력해 주세요. "
+    "(예: 환자 P001 / 메모: ...)"
+)
+OTHER_PATIENT = "요청한 환자 외의 환자 정보는 제공할 수 없습니다."
+NO_FABRICATION = "메모에 없는 S·신체 진찰 소견은 지어 쓰지 않고 '(메모에 없음)'으로 남깁니다."
+NOT_IN_MEMO = "(메모에 없음)"
+
+PATIENT_ID = re.compile(r"\bP\d{3}\b")
+MEMO = re.compile(r"메모\s*:(.*)", re.DOTALL)
+EMPTY_MEMOS = {"", "(없음)", "없음"}
 
 INJECTION_PATTERNS = [
     re.compile(p, re.IGNORECASE)
@@ -49,7 +63,9 @@ class DraftState(AgentState):
     """Agent 상태에 SOAP 초안(draft)을 더한 상태 스키마."""
 
     draft: NotRequired[Any]
-    refused: NotRequired[bool]
+    refused: NotRequired[str]
+    patient_id: NotRequired[str]
+    other_patient: NotRequired[bool]
 
 
 class InputVerdict(BaseModel):
@@ -64,6 +80,23 @@ def is_injection(text: str) -> bool:
     return any(p.search(text) for p in INJECTION_PATTERNS)
 
 
+def find_patient_ids(text: str) -> list[str]:
+    """질문에 나온 환자 ID 를 나온 순서대로, 중복 없이 돌려준다."""
+    return list(dict.fromkeys(PATIENT_ID.findall(text)))
+
+
+def memo_text(question: str) -> str:
+    """질문에서 '메모:' 뒤의 작성자 메모를 꺼낸다. 메모가 없거나 '(없음)'이면 빈 문자열이다."""
+    match = MEMO.search(question)
+    memo = match.group(1).strip() if match else ""
+    return "" if memo in EMPTY_MEMOS else memo
+
+
+def last_question(state: DraftState) -> str:
+    """상태의 메시지 중 마지막 사람 메시지(질문)를 돌려준다."""
+    return next(m.content for m in reversed(state["messages"]) if isinstance(m, HumanMessage))
+
+
 class InputGuard(AgentMiddleware):
     """Agent 가 돌기 전에 질문을 정규식, 이어서 LLM 으로 판별해 막힌 요청은 고정 문구로 거절하는 입력 가드레일."""
 
@@ -76,15 +109,35 @@ class InputGuard(AgentMiddleware):
 
     @hook_config(can_jump_to=["end"])
     def before_agent(self, state: DraftState, runtime) -> dict | None:
-        """마지막 사람 메시지가 정규식에 걸리거나 LLM 이 막으라고 하면 거절 문구를 남기고 끝으로 건너뛴다."""
-        question = next(
-            m.content for m in reversed(state["messages"]) if isinstance(m, HumanMessage)
-        )
-        if not is_injection(question):
-            verdict = self.judge.invoke([SystemMessage(JUDGE_PROMPT), HumanMessage(question)])
-            if not verdict.blocked:
-                return None
-        return {"messages": [AIMessage(REFUSAL)], "refused": True, "jump_to": "end"}
+        """질문이 정규식에 걸리거나 LLM 이 막으라고 하면 거절 문구를, 환자 ID 가 없으면 안내 문구를 남기고 끝으로 건너뛴다.
+
+        통과하면 첫 환자 ID 를 patient_id 로, 다른 환자 ID 가 함께 있으면 other_patient 를 상태에 남긴다.
+        """
+        question = last_question(state)
+        if is_injection(question):
+            return {"messages": [AIMessage(REFUSAL)], "refused": REFUSAL, "jump_to": "end"}
+        verdict = self.judge.invoke([SystemMessage(JUDGE_PROMPT), HumanMessage(question)])
+        if verdict.blocked:
+            return {"messages": [AIMessage(REFUSAL)], "refused": REFUSAL, "jump_to": "end"}
+        patient_ids = find_patient_ids(question)
+        if not patient_ids:
+            return {"messages": [AIMessage(NO_PATIENT_ID)], "refused": NO_PATIENT_ID, "jump_to": "end"}
+        return {"patient_id": patient_ids[0], "other_patient": len(patient_ids) > 1}
+
+
+class PatientScope(AgentMiddleware):
+    """요청한 환자 외의 환자 ID 로 부른 도구는 실행하지 않는 가드레일."""
+
+    state_schema = DraftState
+
+    def wrap_tool_call(self, request, handler):
+        """도구 인자의 patient_id 가 상태의 patient_id 와 다르면 실행하지 않고 고정 문구를 돌려준다."""
+        requested = request.tool_call["args"].get("patient_id")
+        if requested is not None and requested != request.state.get("patient_id"):
+            return ToolMessage(
+                OTHER_PATIENT, tool_call_id=request.tool_call["id"], name=request.tool_call["name"]
+            )
+        return handler(request)
 
 
 def check_suggestions(draft: Any) -> Any:
@@ -99,13 +152,16 @@ def check_suggestions(draft: Any) -> Any:
 
 
 class OutputGuard(AgentMiddleware):
-    """SOAP 초안이 만들어진 뒤 새 제안 목록을 검사해 걸러내는 출력 가드레일."""
+    """SOAP 초안이 만들어진 뒤 새 제안 목록과 S 를 검사해 고치는 출력 가드레일."""
 
     state_schema = DraftState
 
     def after_model(self, state: DraftState, runtime) -> dict | None:
-        """초안이 있으면 새 제안을 걸러낸 초안으로 바꾼다. 도구 호출 중이면 아무것도 하지 않는다."""
+        """초안이 있으면 새 제안을 걸러내고, 메모가 비었으면 S 를 '(메모에 없음)'으로 고정한다. 도구 호출 중이면 아무것도 하지 않는다."""
         draft = state.get("draft")
         if draft is None:
             return None
-        return {"draft": check_suggestions(draft)}
+        draft = check_suggestions(draft)
+        if not memo_text(last_question(state)):
+            draft = draft.model_copy(update={"s": NOT_IN_MEMO})
+        return {"draft": draft}
