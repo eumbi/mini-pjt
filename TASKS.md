@@ -9,7 +9,7 @@
   - 확인: Bedrock 모델을 한 번 호출해 응답 문자열이 출력된다
 - [x] T2. P001 더미 데이터 1명: data/patients/P001.json
   - 확인: 1번 케이스 expected_traits 의 수치(Na 133→130→128, CRP 12.4→6.1, X선 판독)가 파일에 그대로 있다
-- [ ] T3. get_patient_context 최소판: 직전 경과기록 경로만
+- [x] T3. get_patient_context 최소판: 직전 경과기록 경로만
   - 확인: P001 로 부르면 기저질환·알레르기·입력 상병(J18.9)·직전 경과기록 본문이 나온다
 - [ ] T4. get_changes_since_last_note 최소판: Lab 이상치+직전값, 신규 판독만
   - 확인: P001 로 부르면 Na 128(직전 130)과 신규 흉부 X선 판독이 나온다
