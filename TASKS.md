@@ -49,9 +49,9 @@
   - 확인: 한 번 실행으로 재현율 두 점수와 기준선, 위반 건수가 출력된다
 - [x] T19. run_eval.py ② LLM-as-Judge: 케이스 pass/fail, O 반영률, S·신체 진찰 지어냄
   - 확인: 케이스별 PASS/FAIL 과 "XX/20 통과"가 출력된다
-- [ ] T20. run_eval.py ③ RAGAS 4개 지표
+- [x] T20. run_eval.py ③ RAGAS 4개 지표
   - 확인: context_recall·context_precision·faithfulness·answer_relevancy 값이 출력된다
-- [ ] T21. 1차 평가: evaluation/round1_report.md
+- [x] T21. 1차 평가: evaluation/round1_report.md
   - 확인: 통과 건수, 실패 케이스와 원인, 모든 지표가 리포트에 있다
 - [ ] T22. 개선 1회: 1차 실패 원인 중 가장 많은 것 하나를 고친다 (필요하면 반복)
   - 확인: 고친 실패 케이스를 다시 돌려 PASS 로 바뀐다
