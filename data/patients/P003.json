@@ -6,7 +6,7 @@
   "underlying_diseases": [],
   "allergies": [],
   "diagnoses": [
-    {"code": "R50.9", "name": "상세불명의 열"}
+    {"code": "R50.99", "name": "상세불명의 열"}
   ],
   "progress_notes": [],
   "admission_note": null,

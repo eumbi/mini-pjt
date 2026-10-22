@@ -7,12 +7,12 @@
   "allergies": [],
   "diagnoses": [
     {"code": "I63.9", "name": "상세불명의 뇌경색증"},
-    {"code": "I10", "name": "본태성(일차성) 고혈압"}
+    {"code": "I10.9", "name": "기타 및 상세불명의 원발성 고혈압"}
   ],
   "progress_notes": [
     {
       "written_at": "2026-10-20T14:00",
-      "text": "S: 보호자 진술상 어제 저녁 식사 중 사레가 걸려 한참 기침했다고 함.\nO: BT 36.9℃, BP 148/86, HR 82, RR 18, SpO2 96%(room air). 우측 상하지 근력 3등급. 발음 부정확. WBC 8200/µL(입원 시).\nA: 상세불명의 뇌경색증(I63.9), 본태성 고혈압(I10).\nP: aspirin, atorvastatin, amlodipine 을 유지하고, 연하 기능 평가를 의뢰한다."
+      "text": "S: 보호자 진술상 어제 저녁 식사 중 사레가 걸려 한참 기침했다고 함.\nO: BT 36.9℃, BP 148/86, HR 82, RR 18, SpO2 96%(room air). 우측 상하지 근력 3등급. 발음 부정확. WBC 8200/µL(입원 시).\nA: 상세불명의 뇌경색증(I63.9), 본태성 고혈압(I10.9).\nP: aspirin, atorvastatin, amlodipine 을 유지하고, 연하 기능 평가를 의뢰한다."
     }
   ],
   "admission_note": {

@@ -6,12 +6,12 @@
   "underlying_diseases": ["만성 B형 간염"],
   "allergies": [],
   "diagnoses": [
-    {"code": "K74.6", "name": "기타 및 상세불명의 간경화"}
+    {"code": "K74.64", "name": "간의 기타 및 상세불명의 경변증, 비대상성"}
   ],
   "progress_notes": [
     {
       "written_at": "2026-10-20T14:00",
-      "text": "S: 배가 불러 숨이 조금 차다고 함.\nO: BT 37.0℃, BP 108/66, HR 86, RR 18. 복부 팽만, 이동성 둔탁음. 알부민 3.1 g/dL, 총빌리루빈 2.4 mg/dL.\nA: 기타 및 상세불명의 간경화(K74.6), 복수 증가.\nP: spironolactone 과 lactulose 를 유지하고, 내일 진단적 복수 천자를 시행한다."
+      "text": "S: 배가 불러 숨이 조금 차다고 함.\nO: BT 37.0℃, BP 108/66, HR 86, RR 18. 복부 팽만, 이동성 둔탁음. 알부민 3.1 g/dL, 총빌리루빈 2.4 mg/dL.\nA: 기타 및 상세불명의 간경화(K74.64), 복수 증가.\nP: spironolactone 과 lactulose 를 유지하고, 내일 진단적 복수 천자를 시행한다."
     }
   ],
   "admission_note": {

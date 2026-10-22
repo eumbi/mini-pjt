@@ -29,7 +29,7 @@
   - 확인: P010 은 입원기록, P003 은 응급실 기록에서 출발하고, P999 는 '데이터 없음: 등록되지 않은 환자'다
 - [x] T11. get_changes_since_last_note 완성: Lab 추세(3회 이상), 투약 비교, '변화 없음'
   - 확인: P006 은 Hb 추세 3개 값, P002 는 ceftriaxone→ciprofloxacin 변경이 나오고, P012 는 세 항목 모두 '변화 없음'이다
-- [ ] T12. KCD-9 전체 교체: 원본(사람이 준비)을 data/kcd9.csv 형식으로 변환
+- [x] T12. KCD-9 전체 교체: 원본(사람이 준비)을 data/kcd9.csv 형식으로 변환
   - 확인: test_queries.csv 의 정답 상병 코드가 모두 kcd9.csv 에 있다 (없으면 CSV 를 고친다)
 - [ ] T13. 하이브리드 검색: src/retriever.py 에 Chroma DB 미리 만들기 + BM25(kiwipiepy) + EnsembleRetriever
   - 확인: "저나트륨혈증" 상위 10건에 E87.1 이 있고, 두 번째 실행은 임베딩 없이 DB 를 불러오기만 한다

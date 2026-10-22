@@ -6,13 +6,13 @@
   "underlying_diseases": ["고혈압", "심부전"],
   "allergies": [],
   "diagnoses": [
-    {"code": "I50.0", "name": "울혈성 심부전"},
-    {"code": "I10", "name": "본태성(일차성) 고혈압"}
+    {"code": "I50.08", "name": "기타 및 상세불명의 울혈성 심부전"},
+    {"code": "I10.9", "name": "기타 및 상세불명의 원발성 고혈압"}
   ],
   "progress_notes": [
     {
       "written_at": "2026-10-20T14:00",
-      "text": "S: 누우면 숨이 차서 베개 두 개를 베고 잔다고 함.\nO: BP 146/88, HR 96, RR 22, SpO2 93%(room air). 양측 하폐야 수포음. 양측 하지 부종 2+. NT-proBNP 3200 pg/mL(입원 시).\nA: 울혈성 심부전(I50.0), 본태성 고혈압(I10).\nP: furosemide 와 amlodipine 을 유지하고, 체중과 섭취·배설량을 매일 확인한다."
+      "text": "S: 누우면 숨이 차서 베개 두 개를 베고 잔다고 함.\nO: BP 146/88, HR 96, RR 22, SpO2 93%(room air). 양측 하폐야 수포음. 양측 하지 부종 2+. NT-proBNP 3200 pg/mL(입원 시).\nA: 울혈성 심부전(I50.08), 본태성 고혈압(I10.9).\nP: furosemide 와 amlodipine 을 유지하고, 체중과 섭취·배설량을 매일 확인한다."
     }
   ],
   "admission_note": {
