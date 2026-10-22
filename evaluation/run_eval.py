@@ -104,11 +104,14 @@ def numbers_in(text: str) -> set[str]:
 
 
 def unsupported_numbers(question: str, answer: dict) -> list[str]:
-    """S·O·A·P 에 나온 숫자 중 환자 데이터와 질문 어디에도 없는 것을 돌려준다. KCD 코드와 10 이하 정수는 빼고 본다."""
+    """O 에 나온 숫자 중 환자 데이터와 질문 어디에도 없는 것을 돌려준다. KCD 코드와 10 이하 정수는 빼고 본다.
+
+    Lab·판독·처방 수치는 O 에 정리되므로 O 만 본다. A·P 의 계산 비율이나 치료 목표치는 검사하지 않는다.
+    """
     patient = load_patient(question)
     source = json.dumps(patient, ensure_ascii=False) if patient else ""
     allowed = numbers_in(source) | numbers_in(question)
-    text = KCD_PATTERN.sub(" ", "\n".join(answer[key] for key in ["s", "o", "a", "p"]))
+    text = KCD_PATTERN.sub(" ", answer["o"])
     used = numbers_in(text)
     small = {str(n) for n in range(SMALL_INT + 1)}
     return sorted(used - allowed - small, key=float)
