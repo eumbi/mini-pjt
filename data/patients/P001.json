@@ -1,0 +1,44 @@
+{
+  "patient_id": "P001",
+  "age": 72,
+  "sex": "M",
+  "admitted_at": "2026-10-19T10:00",
+  "underlying_diseases": ["고혈압", "2형 당뇨병"],
+  "allergies": ["조영제(두드러기)"],
+  "diagnoses": [
+    {"code": "J18.9", "name": "상세불명의 폐렴"}
+  ],
+  "progress_notes": [
+    {
+      "written_at": "2026-10-20T14:00",
+      "text": "S: 기침과 가래 지속, 발열은 없었다고 함.\nO: BT 37.4℃, BP 132/78, HR 88, RR 20, SpO2 95%(room air). 청진상 우하엽 수포음. Na 130 mmol/L, CRP 12.4 mg/dL(입원 시).\nA: 상세불명의 폐렴(J18.9), 항생제 치료 2일째.\nP: ceftriaxone과 azithromycin을 유지하고, 내일 아침 혈액검사와 흉부 X선을 다시 확인한다."
+    }
+  ],
+  "admission_note": {
+    "written_at": "2026-10-19T11:00",
+    "text": "주호소: 3일 전부터 기침, 노란 가래, 발열.\n현병력: 고혈압과 2형 당뇨병으로 외래 추적 중인 72세 남자로, 3일 전부터 기침과 가래, 38.5℃ 발열이 있어 응급실을 거쳐 입원함.\n진찰: BT 38.3℃, BP 138/82, HR 102, RR 22, SpO2 93%(room air). 청진상 우하엽 수포음.\n계획: 정맥 항생제(ceftriaxone)와 경구 azithromycin을 시작한다."
+  },
+  "er_note": {
+    "written_at": "2026-10-19T08:30",
+    "text": "3일간의 기침, 가래, 발열로 내원. BT 38.5℃, SpO2 93%. 흉부 X선 촬영 후 입원 결정."
+  },
+  "labs": [
+    {"name": "Na", "value": 133, "unit": "mmol/L", "ref_low": 135, "ref_high": 145, "measured_at": "2026-10-19T09:00"},
+    {"name": "K", "value": 4.1, "unit": "mmol/L", "ref_low": 3.5, "ref_high": 5.0, "measured_at": "2026-10-19T09:00"},
+    {"name": "WBC", "value": 13800, "unit": "/µL", "ref_low": 4000, "ref_high": 10000, "measured_at": "2026-10-19T09:00"},
+    {"name": "CRP", "value": 12.4, "unit": "mg/dL", "ref_low": 0, "ref_high": 0.5, "measured_at": "2026-10-19T09:00"},
+    {"name": "Na", "value": 130, "unit": "mmol/L", "ref_low": 135, "ref_high": 145, "measured_at": "2026-10-20T06:00"},
+    {"name": "Na", "value": 128, "unit": "mmol/L", "ref_low": 135, "ref_high": 145, "measured_at": "2026-10-21T06:00"},
+    {"name": "K", "value": 4.0, "unit": "mmol/L", "ref_low": 3.5, "ref_high": 5.0, "measured_at": "2026-10-21T06:00"},
+    {"name": "WBC", "value": 8900, "unit": "/µL", "ref_low": 4000, "ref_high": 10000, "measured_at": "2026-10-21T06:00"},
+    {"name": "CRP", "value": 6.1, "unit": "mg/dL", "ref_low": 0, "ref_high": 0.5, "measured_at": "2026-10-21T06:00"}
+  ],
+  "readings": [
+    {"exam": "흉부 X선", "read_at": "2026-10-19T09:30", "finding": "우하엽 경화 소견"},
+    {"exam": "흉부 X선", "read_at": "2026-10-21T09:00", "finding": "우하엽 경화 이전보다 감소"}
+  ],
+  "prescriptions": [
+    {"drug": "ceftriaxone", "dose": "2g", "route": "IV", "frequency": "q24h", "started_at": "2026-10-19T11:00", "stopped_at": null},
+    {"drug": "azithromycin", "dose": "500mg", "route": "PO", "frequency": "qd", "started_at": "2026-10-19T11:00", "stopped_at": null}
+  ]
+}

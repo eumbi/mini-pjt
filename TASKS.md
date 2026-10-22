@@ -7,7 +7,7 @@
 ## M1. 최소 경로 — 1번 케이스(P001)가 /query 에서 답변까지 한 번 돈다
 - [x] T1. 실행 환경: requirements.txt 작성, .env 에 Bedrock 자격 증명과 BEDROCK_MODEL_ID
   - 확인: Bedrock 모델을 한 번 호출해 응답 문자열이 출력된다
-- [ ] T2. P001 더미 데이터 1명: data/patients/P001.json
+- [x] T2. P001 더미 데이터 1명: data/patients/P001.json
   - 확인: 1번 케이스 expected_traits 의 수치(Na 133→130→128, CRP 12.4→6.1, X선 판독)가 파일에 그대로 있다
 - [ ] T3. get_patient_context 최소판: 직전 경과기록 경로만
   - 확인: P001 로 부르면 기저질환·알레르기·입력 상병(J18.9)·직전 경과기록 본문이 나온다
