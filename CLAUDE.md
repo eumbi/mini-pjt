@@ -4,9 +4,12 @@
 - Python, LangChain, LangGraph
 - 모델은 Amazon Bedrock (ChatBedrockConverse)
 - Agent 생성은 langchain.agents 의 create_agent 를 쓴다
-- answer 는 Pydantic 모델로 정의한 구조화 출력으로 만든다 (필수 패턴 1)
-- 트레이스는 LangSmith 로 남긴다 (필수 패턴 11)
-- 평가는 RAGAS(context_recall, context_precision, faithfulness, answer_relevancy)와 LLM-as-Judge 를 쓴다 (필수 패턴 12)
+- POST /query 서버는 FastAPI 엔드포인트 하나로 최소한만 둔다
+- answer 는 Pydantic 모델에 llm.with_structured_output 으로 담는다 (필수 패턴 1)
+- 트레이스는 콜백(FileTracer)으로 JSONL 파일에 남기고, 같은 기록으로 응답의 trace 를 채운다. LangSmith 는 쓰지 않는다 (필수 패턴 11)
+- 평가는 LLM-as-Judge 로 판정하고, RAGAS(context_recall, context_precision, faithfulness, answer_relevancy)는 지표 산출과 보고에만 쓴다 (필수 패턴 12)
+- 가드레일은 미들웨어로 붙인다. 입력은 정규식 + LLM 판별, 출력은 after_model 에서 코드 검사한다. 거절은 고정 문구로 한다
+- 도구 안에서는 LLM 을 부르지 않는다. 판단은 Agent 가 한다
 - 무엇을 왜 만드는지는 SERVICE.md 를 본다
 
 ## 폴더 구조 (제출 규약. 바꾸지 않는다)
@@ -26,8 +29,9 @@ requirements.txt
 - src/tools.py: 도구 3개. 동작 상세는 SERVICE.md 3절을 따른다
   - get_patient_context(patient_id): 환자 맥락 조회. JSON 조회만 하고 LLM 을 쓰지 않는다
   - get_changes_since_last_note(patient_id): 직전 기록 이후 변화 조회. JSON 조회와 비교만 하고 LLM 을 쓰지 않는다
-  - recommend_kcd_codes(clinical_summary, existing_codes): 상병 코드 추천. retriever 검색 결과에서 LLM 이 고르고, KCD-9 목록에 있는지 코드로 다시 확인한다
-- src/retriever.py: data/kcd9.csv 검색. BM25 와 벡터 검색(Amazon Titan Text Embeddings V2)을 합친 하이브리드 검색이며, 검색어마다 상위 10건을 돌려준다
+  - search_kcd_codes(query): KCD-9 후보 검색. retriever 결과를 코드, 한글 명칭, 출처로 돌려주기만 한다. 고르기는 Agent 가 한다
+- src/retriever.py: data/kcd9.csv 검색. BM25(kiwipiepy 토크나이저)와 벡터 검색(Amazon Titan Text Embeddings V2, Chroma)을 EnsembleRetriever 로 합친 하이브리드 검색이며, 검색어마다 상위 10건을 돌려준다. Chroma DB 는 미리 만들어 두고 불러오기만 한다
+- 새 제안 5개 이하와 KCD-9 코드 여부는 출력 가드레일 미들웨어에서 코드로 검사한다
 - data/patients/{patient_id}.json: 더미 환자 데이터 (필드는 SERVICE.md 3절)
 - data/kcd9.csv: 실제 KCD-9 전체 (코드, 한글 명칭, 영문 명칭)
 - evaluation/: 20건의 test_queries.csv 와 라운드별 평가 리포트
