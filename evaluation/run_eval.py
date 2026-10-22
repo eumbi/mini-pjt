@@ -8,10 +8,12 @@ RAGAS 4개 지표는 호출이 많아 라운드 리포트를 만들 때(--report
 import argparse
 import csv
 import json
+import math
 import os
 import re
 import sys
 import types
+from datetime import date
 from pathlib import Path
 
 from langchain_aws import BedrockEmbeddings
@@ -270,8 +272,24 @@ def import_ragas():
     return ragas, metrics
 
 
-def run_ragas(cases: list[dict], results: dict) -> dict[str, float]:
-    """거절이 아니고 contexts 가 있는 케이스로 RAGAS 4개 지표를 계산해 케이스별 점수를 results 에 넣고 평균을 돌려준다.
+def ragas_targets(cases: list[dict], results: dict) -> list[dict]:
+    """RAGAS 를 계산할 케이스: 거절이 아니고 contexts 가 있는 것."""
+    return [c for c in cases if "refusal" not in results[c["id"]]["answer"] and results[c["id"]]["contexts"]]
+
+
+def ragas_summary(cases: list[dict], results: dict) -> dict[str, tuple[float, int, int]]:
+    """케이스별 RAGAS 점수에서 지표마다 (평균, 계산된 건수, 대상 건수)를 낸다. 시간 초과로 빈 값(NaN)은 뺀다."""
+    targets = ragas_targets(cases, results)
+    summary = {}
+    for name in RAGAS_METRICS:
+        values = [results[c["id"]]["ragas"][name] for c in targets]
+        valid = [v for v in values if not math.isnan(v)]
+        summary[name] = (sum(valid) / len(valid) if valid else float("nan"), len(valid), len(targets))
+    return summary
+
+
+def run_ragas(cases: list[dict], results: dict) -> None:
+    """RAGAS 대상 케이스로 4개 지표를 계산해 케이스별 점수를 results 의 ragas 키에 넣는다.
 
     reference 는 정답 문서가 없으므로 expected_traits 를 이어 붙인 글로 쓴다.
     """
@@ -279,7 +297,7 @@ def run_ragas(cases: list[dict], results: dict) -> dict[str, float]:
     from ragas.embeddings import LangchainEmbeddingsWrapper
     from ragas.llms import LangchainLLMWrapper
 
-    targets = [c for c in cases if "refusal" not in results[c["id"]]["answer"] and results[c["id"]]["contexts"]]
+    targets = ragas_targets(cases, results)
     dataset = ragas.EvaluationDataset.from_list([
         {
             "user_input": case["input"],
@@ -300,7 +318,6 @@ def run_ragas(cases: list[dict], results: dict) -> dict[str, float]:
     ).to_pandas()
     for case, (_, row) in zip(targets, scores.iterrows()):
         results[case["id"]]["ragas"] = {name: float(row[name]) for name in RAGAS_METRICS}
-    return {name: float(scores[name].mean()) for name in RAGAS_METRICS}
 
 
 def load_results() -> dict:
@@ -320,6 +337,51 @@ def percent(numerator: int, denominator: int) -> str:
     """'n/m = xx.x%' 문자열을 만든다."""
     rate = numerator / denominator if denominator else 0
     return f"{numerator}/{denominator} = {rate:.1%}"
+
+
+def write_report(
+    path: Path, rows: list[dict], summary: list[tuple], fabrications: list[str], ragas_means: dict[str, float]
+) -> None:
+    """요약 지표, RAGAS, 케이스별 판정과 실패 항목을 마크다운 리포트로 쓴다. 실패 원인 분석은 사람이 덧붙인다."""
+    mark = {True: "달성", False: "미달", None: "-"}
+    lines = [
+        f"# {path.stem.removesuffix('_report')} 평가 리포트",
+        "",
+        f"- 실행일: {date.today().isoformat()}",
+        f"- 모델: {os.environ['BEDROCK_MODEL_ID']} (Agent·LLM 판정기·RAGAS 공통, temperature=0)",
+        f"- 실행: `python -m evaluation.run_eval --report {path.as_posix()}`",
+        "",
+        "## 요약 지표",
+        "",
+        "| 지표 | 값 | 목표 | 판정 |",
+        "|---|---|---|---|",
+        *[f"| {name} | {value} | {target} | {mark[met]} |" for name, value, target, met in summary],
+        *[f"| RAGAS {name} | {mean:.3f} ({valid}/{count}건) | - | - |" for name, (mean, valid, count) in ragas_means.items()],
+        "",
+        "- 판정: 상병 코드 포함·새 제안 개수·KCD-9 여부·데이터에 없는 수치는 코드로, 나머지 expected_traits·forbidden 은 LLM-as-Judge 로 본다",
+        "- RAGAS: 거절 답변을 뺀 케이스로 계산. 정답 문서가 없어 reference 는 expected_traits 를 이어 붙인 글을 쓴다."
+        " 괄호는 계산된 건수/대상 건수이며, 시간 초과로 빠진 케이스는 평균에서 뺀다",
+    ]
+    if fabrications:
+        lines += ["", "지어낸 S·신체 진찰 소견:", *[f"- {item}" for item in fabrications]]
+    lines += [
+        "",
+        "## 케이스별 결과",
+        "",
+        "| id | category | 판정 | 도구 호출 | 상병(완전) | 상병(세 자리) |",
+        "|---|---|---|---|---|---|",
+        *[
+            f"| {r['id']} | {r['category']} | {r['verdict']} | {r['tool']} | {r['codes'][0]} | {r['codes'][1]} |"
+            for r in rows
+        ],
+        "",
+        "## 실패 항목",
+        "",
+    ]
+    for r in rows:
+        if r["failed"]:
+            lines += [f"### {r['id']}번 ({r['category']}) {r['note']}", *[f"- {item}" for item in r["failed"]], ""]
+    path.write_text("\n".join(lines), encoding="utf-8")
 
 
 def main() -> None:
@@ -345,14 +407,17 @@ def main() -> None:
         results[case["id"]] = {"question": case["input"], **run_case(case["input"])}
         save_results(results)
 
+    # --reuse 면 저장된 판정을 그대로 쓴다. 새로 실행한 케이스는 판정도 새로 한다
     for case in cases:
+        if args.reuse and "judge" in results[case["id"]]:
+            continue
         print(f"[{case['id']}] 판정 중...", flush=True)
         results[case["id"]]["judge"] = judge_case(case, results[case["id"]])
     save_results(results)
 
     total = exact = three = base_exact = base_three = 0
     tools_ok = violation_count = passed = o_ok = o_total = 0
-    fabrications = []
+    fabrications, rows = [], []
     print(f"\n{'id':>3} {'category':<10} {'판정':<4} {'도구':<4} {'완전':>5} {'세자리':>6}  위반")
     for case in cases:
         result = results[case["id"]]
@@ -385,28 +450,38 @@ def main() -> None:
             print(f"    기대 도구 {case['expected_tools']} / 호출 {called_tools(result)}")
         for item in failed:
             print(f"    - {item}")
+        rows.append({**case, "verdict": verdict_mark, "tool": tool_mark, "codes": codes, "failed": failed})
 
     recall = exact / total if total else 0
     o_rate = o_ok / o_total if o_total else 0
+    summary = [
+        ("케이스 통과", f"{passed}/{len(cases)} 통과", f"{TARGET_PASS}건 이상", passed >= TARGET_PASS),
+        ("도구 호출 일치", f"{tools_ok}/{len(cases)}", "-", None),
+        ("상병 재현율(완전 일치)", f"{percent(exact, total)} (기준선 {percent(base_exact, total)})",
+         "80% 이상", recall >= TARGET_RECALL),
+        ("상병 재현율(앞 세 자리)", f"{percent(three, total)} (기준선 {percent(base_three, total)})", "참고", None),
+        ("자동 가드레일 위반", f"{violation_count}건", "0건", violation_count == 0),
+        ("O 반영률", percent(o_ok, o_total), "70% 이상", o_rate >= TARGET_O_RATE),
+        ("S·신체 진찰 지어냄", f"{len(fabrications)}건", "0건", not fabrications),
+    ]
     print("\n== 요약 ==")
-    print(f"케이스 통과: {passed}/{len(cases)} 통과  목표 {TARGET_PASS}건 {'달성' if passed >= TARGET_PASS else '미달'}")
-    print(f"도구 호출 일치: {tools_ok}/{len(cases)}")
-    print(
-        f"상병 재현율(완전 일치):  {percent(exact, total)} (기준선 {percent(base_exact, total)})"
-        f"  목표 80% {'달성' if recall >= TARGET_RECALL else '미달'}"
-    )
-    print(f"상병 재현율(앞 세 자리): {percent(three, total)} (기준선 {percent(base_three, total)})")
-    print(f"자동 가드레일 위반: {violation_count}건  목표 0건 {'달성' if violation_count == 0 else '미달'}")
-    print(f"O 반영률: {percent(o_ok, o_total)}  목표 70% {'달성' if o_rate >= TARGET_O_RATE else '미달'}")
-    print(f"S·신체 진찰 지어냄: {len(fabrications)}건  목표 0건 {'달성' if not fabrications else '미달'}")
+    for name, value, target, met in summary:
+        print(f"{name}: {value}" + ("" if met is None else f"  목표 {target} {'달성' if met else '미달'}"))
     for item in fabrications:
         print(f"    - {item}")
 
     if args.report:
-        print("\nRAGAS 계산 중...", flush=True)
-        ragas_means = run_ragas(cases, results)
-        save_results(results)
-        print("RAGAS: " + "  ".join(f"{name} {value:.3f}" for name, value in ragas_means.items()))
+        saved = all("ragas" in results[c["id"]] for c in ragas_targets(cases, results))
+        if not (args.reuse and saved):
+            print("\nRAGAS 계산 중...", flush=True)
+            run_ragas(cases, results)
+            save_results(results)
+        ragas_means = ragas_summary(cases, results)
+        print("RAGAS: " + "  ".join(
+            f"{name} {mean:.3f} ({valid}/{count}건)" for name, (mean, valid, count) in ragas_means.items()
+        ))
+        write_report(Path(args.report), rows, summary, fabrications, ragas_means)
+        print(f"리포트 저장: {args.report}")
 
 
 if __name__ == "__main__":
