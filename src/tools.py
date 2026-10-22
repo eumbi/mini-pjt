@@ -53,44 +53,87 @@ def get_patient_context(patient_id: str) -> dict | str:
     }
 
 
+def _parse(timestamp: str) -> datetime:
+    """ISO 형식 시각 문자열을 datetime 으로 바꾼다."""
+    return datetime.fromisoformat(timestamp)
+
+
 @tool
-def get_changes_since_last_note(patient_id: str) -> dict:
+def get_changes_since_last_note(patient_id: str) -> dict | str:
     """환자 ID 로 직전 경과기록 이후의 변화를 조회한다.
 
-    기준 시각(baseline_at)은 직전 경과기록의 작성 시각이다.
+    기준 시각(baseline_at)은 직전 경과기록의 작성 시각이고, 경과기록이 없으면 입원 시각이다.
+    baseline_source 는 기준 시각의 출처다 (progress_note: 직전 경과기록, admitted_at: 입원 시각).
     labs: 기준 시각 이후 결과 중 참고치(하한·상한)를 벗어난 항목 전부. previous 에 같은 검사의 직전 결과를 붙인다.
+      같은 검사가 이번 입원 중 3회 이상이면 trend 에 그 결과까지의 값을 시간 순서대로 나열하고, 아니면 trend 는 None 이다.
     readings: 기준 시각 이후 나온 판독의 검사명, 판독 시각, 판독 소견 원문.
+    medications: 직전 처방(기준 시각에 유효한 처방)과 현재 처방(중단되지 않은 처방)을 약품별로 비교해
+      new(신규), stopped(중단), changed(용량·경로·빈도 변경, before/after)로 나눈다.
+    세 항목 중 변화가 없는 항목은 '변화 없음'으로 표시한다.
+    등록되지 않은 환자 ID 면 '데이터 없음: 등록되지 않은 환자'를 돌려준다.
     """
+    if not (PATIENTS_DIR / f"{patient_id}.json").exists():
+        return "데이터 없음: 등록되지 않은 환자"
     patient = _load_patient(patient_id)
-    last_note = max(patient["progress_notes"], key=lambda note: note["written_at"])
-    baseline = datetime.fromisoformat(last_note["written_at"])
+    if patient["progress_notes"]:
+        baseline_source = "progress_note"
+        baseline_at = max(note["written_at"] for note in patient["progress_notes"])
+    else:
+        baseline_source, baseline_at = "admitted_at", patient["admitted_at"]
+    baseline = _parse(baseline_at)
 
-    labs = sorted(patient["labs"], key=lambda lab: datetime.fromisoformat(lab["measured_at"]))
+    labs = sorted(patient["labs"], key=lambda lab: _parse(lab["measured_at"]))
     abnormal_labs = []
     for index, lab in enumerate(labs):
-        if datetime.fromisoformat(lab["measured_at"]) <= baseline:
+        if _parse(lab["measured_at"]) <= baseline:
             continue
         if lab["ref_low"] <= lab["value"] <= lab["ref_high"]:
             continue
-        earlier = [prev for prev in labs[:index] if prev["name"] == lab["name"]]
+        same = [prev for prev in labs[: index + 1] if prev["name"] == lab["name"]]
+        earlier = same[-2] if len(same) >= 2 else None
         previous = (
-            {"value": earlier[-1]["value"], "measured_at": earlier[-1]["measured_at"]}
-            if earlier
+            {"value": earlier["value"], "measured_at": earlier["measured_at"]} if earlier else None
+        )
+        trend = (
+            [{"value": item["value"], "measured_at": item["measured_at"]} for item in same]
+            if len(same) >= 3
             else None
         )
-        abnormal_labs.append({**lab, "previous": previous})
+        abnormal_labs.append({**lab, "previous": previous, "trend": trend})
 
     new_readings = [
         {"exam": reading["exam"], "read_at": reading["read_at"], "finding": reading["finding"]}
         for reading in patient["readings"]
-        if datetime.fromisoformat(reading["read_at"]) > baseline
+        if _parse(reading["read_at"]) > baseline
     ]
+
+    def _order(rx: dict) -> dict:
+        """처방 한 행에서 비교에 쓰는 필드만 남긴다."""
+        return {key: rx[key] for key in ("drug", "dose", "route", "frequency")}
+
+    before = {
+        rx["drug"]: _order(rx)
+        for rx in patient["prescriptions"]
+        if _parse(rx["started_at"]) <= baseline
+        and (rx["stopped_at"] is None or _parse(rx["stopped_at"]) > baseline)
+    }
+    current = {rx["drug"]: _order(rx) for rx in patient["prescriptions"] if rx["stopped_at"] is None}
+    new = [current[drug] for drug in current if drug not in before]
+    stopped = [before[drug] for drug in before if drug not in current]
+    changed = [
+        {"drug": drug, "before": before[drug], "after": current[drug]}
+        for drug in current
+        if drug in before and before[drug] != current[drug]
+    ]
+    medications = {"new": new, "stopped": stopped, "changed": changed}
 
     return {
         "patient_id": patient["patient_id"],
-        "baseline_at": last_note["written_at"],
-        "labs": abnormal_labs,
-        "readings": new_readings,
+        "baseline_at": baseline_at,
+        "baseline_source": baseline_source,
+        "labs": abnormal_labs or "변화 없음",
+        "readings": new_readings or "변화 없음",
+        "medications": medications if new or stopped or changed else "변화 없음",
     }
 
 

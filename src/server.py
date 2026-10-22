@@ -69,25 +69,46 @@ def _patient_contexts(output: dict) -> list[dict]:
     return contexts
 
 
+def _order_text(order: dict) -> str:
+    """처방 한 건을 '약품 용량 경로 빈도' 문장으로 만든다."""
+    return f"{order['drug']} {order['dose']} {order['route']} {order['frequency']}"
+
+
 def _changes_contexts(output: dict) -> list[dict]:
-    """get_changes_since_last_note 결과를 Lab·판독 문서들로 나눈다."""
+    """get_changes_since_last_note 결과를 Lab·판독·투약 문서들로 나눈다. '변화 없음' 항목은 건너뛴다."""
     pid = output["patient_id"]
+    labs = output["labs"] if isinstance(output["labs"], list) else []
+    readings = output["readings"] if isinstance(output["readings"], list) else []
+    medications = output["medications"] if isinstance(output["medications"], dict) else {}
     contexts = []
-    for lab in output["labs"]:
+    for lab in labs:
         text = (
             f"{lab['name']} {lab['value']} {lab['unit']} "
             f"(참고치 {lab['ref_low']}–{lab['ref_high']}, {lab['measured_at']})"
         )
         if lab["previous"]:
             text += f", 직전 {lab['previous']['value']} ({lab['previous']['measured_at']})"
+        if lab["trend"]:
+            text += ", 추세 " + "→".join(str(item["value"]) for item in lab["trend"])
         contexts.append({"doc_id": f"{pid}/lab/{lab['name']}", "text": text})
-    for reading in output["readings"]:
+    for reading in readings:
         contexts.append(
             {
                 "doc_id": f"{pid}/reading/{reading['exam']}",
                 "text": f"{reading['exam']} ({reading['read_at']}): {reading['finding']}",
             }
         )
+    for order in medications.get("new", []):
+        contexts.append(
+            {"doc_id": f"{pid}/medication/{order['drug']}", "text": "신규: " + _order_text(order)}
+        )
+    for order in medications.get("stopped", []):
+        contexts.append(
+            {"doc_id": f"{pid}/medication/{order['drug']}", "text": "중단: " + _order_text(order)}
+        )
+    for change in medications.get("changed", []):
+        text = f"변경: {_order_text(change['before'])} → {_order_text(change['after'])}"
+        contexts.append({"doc_id": f"{pid}/medication/{change['drug']}", "text": text})
     return contexts
 
 
