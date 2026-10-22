@@ -53,7 +53,7 @@
   - 확인: context_recall·context_precision·faithfulness·answer_relevancy 값이 출력된다
 - [x] T21. 1차 평가: evaluation/round1_report.md
   - 확인: 통과 건수, 실패 케이스와 원인, 모든 지표가 리포트에 있다
-- [ ] T22. 개선 1회: 1차 실패 원인 중 가장 많은 것 하나를 고친다 (필요하면 반복)
+- [x] T22. 개선 1회: 1차 실패 원인 중 가장 많은 것 하나를 고친다 (필요하면 반복)
   - 확인: 고친 실패 케이스를 다시 돌려 PASS 로 바뀐다
 - [ ] T23. 2차 평가: evaluation/round2_report.md
   - 확인: 1차 대비 개선폭(통과 건수와 지표)이 적혀 있다. 목표 16/20 이상
