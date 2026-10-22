@@ -7,6 +7,7 @@ EnsembleRetriever 로 합친 하이브리드 검색으로 찾는다. Chroma DB �
 
 import csv
 import os
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 from pathlib import Path
@@ -32,6 +33,8 @@ BUILD_BATCH = 500
 BUILD_WORKERS = 8
 
 _kiwi = Kiwi()
+# Agent 가 search_kcd_codes 를 병렬로 부를 때 검색기를 한 번만 만들도록 첫 초기화를 잠근다
+_init_lock = threading.Lock()
 
 
 def _tokenize(text: str) -> list[str]:
@@ -117,7 +120,9 @@ def _ensemble_retriever() -> EnsembleRetriever:
 
 def search(query: str) -> list[Document]:
     """검색어 하나로 KCD-9 문서를 하이브리드 검색해 상위 10건을 돌려준다."""
-    return _ensemble_retriever().invoke(query)[:TOP_K]
+    with _init_lock:
+        retriever = _ensemble_retriever()
+    return retriever.invoke(query)[:TOP_K]
 
 
 if __name__ == "__main__":
