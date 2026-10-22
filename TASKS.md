@@ -31,7 +31,7 @@
   - 확인: P006 은 Hb 추세 3개 값, P002 는 ceftriaxone→ciprofloxacin 변경이 나오고, P012 는 세 항목 모두 '변화 없음'이다
 - [x] T12. KCD-9 전체 교체: 원본(사람이 준비)을 data/kcd9.csv 형식으로 변환
   - 확인: test_queries.csv 의 정답 상병 코드가 모두 kcd9.csv 에 있다 (없으면 CSV 를 고친다)
-- [ ] T13. 하이브리드 검색: src/retriever.py 에 Chroma DB 미리 만들기 + BM25(kiwipiepy) + EnsembleRetriever
+- [x] T13. 하이브리드 검색: src/retriever.py 에 Chroma DB 미리 만들기 + BM25(kiwipiepy) + EnsembleRetriever
   - 확인: "저나트륨혈증" 상위 10건에 E87.1 이 있고, 두 번째 실행은 임베딩 없이 DB 를 불러오기만 한다
 
 ## M3. 안전과 관측
