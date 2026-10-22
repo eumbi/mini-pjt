@@ -17,7 +17,7 @@
   - 확인: "저나트륨혈증"을 검색하면 E87.1 이 코드·명칭·출처(KCD/E87.1)로 나온다
 - [x] T6. Agent 와 구조화 출력: src/agent.py (create_agent + 도구 3개 + 짧은 시스템 프롬프트 + SOAP Pydantic 모델)
   - 확인: P001 질문으로 실행하면 S·O·A·P, 기존 상병, 새 제안(E87.1 포함), 고정 문구가 나온다
-- [ ] T7. API 서버: src/server.py 의 POST /query (contexts 는 도구 결과, trace 는 도구 호출 순서)
+- [x] T7. API 서버: src/server.py 의 POST /query (contexts 는 도구 결과, trace 는 도구 호출 순서)
   - 확인: curl 로 1번 케이스 input 을 보내면 answer·contexts·trace 세 키가 돌아오고 trace 에 도구 3개가 있다
 
 ## M2. 데이터와 도구 완성
