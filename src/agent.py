@@ -10,7 +10,7 @@ from langchain_aws import ChatBedrockConverse
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
 
-from src.guards import DraftState, OutputGuard
+from src.guards import REFUSAL, DraftState, InputGuard, OutputGuard
 from src.tools import get_changes_since_last_note, get_patient_context, search_kcd_codes
 
 load_dotenv()
@@ -77,18 +77,21 @@ class SoapFormatter(AgentMiddleware):
         return {"draft": draft}
 
 
+# before_agent 는 앞에서부터 돌므로 InputGuard 가 가장 먼저 질문을 검사하고, 거절하면 바로 끝난다
 # after_model 은 목록 뒤에서부터 돌므로 SoapFormatter 가 초안을 만든 뒤 OutputGuard 가 검사한다
 agent = create_agent(
     model=llm,
     tools=[get_patient_context, get_changes_since_last_note, search_kcd_codes],
     system_prompt=SYSTEM_PROMPT,
-    middleware=[OutputGuard(), SoapFormatter()],
+    middleware=[InputGuard(llm), OutputGuard(), SoapFormatter()],
 )
 
 
 def run(question: str) -> dict:
-    """질문 하나로 에이전트를 돌려 SOAP 초안(answer)과 대화 메시지 전체를 돌려준다."""
+    """질문 하나로 에이전트를 돌려 SOAP 초안(answer)과 대화 메시지 전체를 돌려준다. 거절되면 answer 는 거절 문구다."""
     result = agent.invoke({"messages": [HumanMessage(question)]})
+    if result.get("refused"):
+        return {"answer": {"refusal": REFUSAL}, "messages": result["messages"]}
     draft = result["draft"]
     return {
         "answer": {**draft.model_dump(), "notice": NOTICE},

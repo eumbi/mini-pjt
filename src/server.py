@@ -35,8 +35,11 @@ def _tool_calls(messages: list) -> list[tuple[str, dict, dict | str]]:
 
 
 def _build_trace(calls: list, answer: dict) -> list[dict]:
-    """도구 호출 순서대로 trace 를 만들고, 마지막에 SOAP 정리 단계를 붙인다."""
+    """도구 호출 순서대로 trace 를 만들고, 마지막에 SOAP 정리 단계(거절이면 입력 가드레일 단계)를 붙인다."""
     trace = [{"step": name, "input": args, "output": output} for name, args, output in calls]
+    if "refusal" in answer:
+        trace.append({"step": "input_guard", "input": "질문", "output": answer})
+        return trace
     trace.append({"step": "soap_draft", "input": "도구 결과와 메모", "output": answer})
     return trace
 
