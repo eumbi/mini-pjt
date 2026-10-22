@@ -1,9 +1,6 @@
 """API 서버. POST /query 하나로 질문을 받아 answer·contexts·trace 를 돌려준다."""
 
-import json
-
 from fastapi import FastAPI
-from langchain_core.messages import AIMessage, ToolMessage
 from pydantic import BaseModel
 
 from src.agent import run
@@ -15,33 +12,6 @@ class QueryRequest(BaseModel):
     """POST /query 요청 본문. question 에 환자 ID 와 작성자 메모를 담는다."""
 
     question: str
-
-
-def _tool_calls(messages: list) -> list[tuple[str, dict, dict | str]]:
-    """대화 메시지에서 도구 호출을 순서대로 뽑아 (도구 이름, 입력, 출력) 목록으로 돌려준다."""
-    outputs = {m.tool_call_id: m.content for m in messages if isinstance(m, ToolMessage)}
-    calls = []
-    for message in messages:
-        if not isinstance(message, AIMessage):
-            continue
-        for call in message.tool_calls:
-            content = outputs.get(call["id"], "")
-            try:
-                output = json.loads(content)
-            except (TypeError, json.JSONDecodeError):
-                output = content
-            calls.append((call["name"], call["args"], output))
-    return calls
-
-
-def _build_trace(calls: list, answer: dict) -> list[dict]:
-    """도구 호출 순서대로 trace 를 만들고, 마지막에 SOAP 정리 단계(거절이면 입력 가드레일 단계)를 붙인다."""
-    trace = [{"step": name, "input": args, "output": output} for name, args, output in calls]
-    if "refusal" in answer:
-        trace.append({"step": "input_guard", "input": "질문", "output": answer})
-        return trace
-    trace.append({"step": "soap_draft", "input": "도구 결과와 메모", "output": answer})
-    return trace
 
 
 def _patient_contexts(output: dict) -> list[dict]:
@@ -122,18 +92,18 @@ def _kcd_contexts(output: dict) -> list[dict]:
     ]
 
 
-def _build_contexts(calls: list) -> list[dict]:
-    """도구가 가져온 환자 데이터와 KCD 검색 결과를 contexts 로 모은다. 같은 doc_id 는 첫 것만 둔다."""
+def _build_contexts(trace: list[dict]) -> list[dict]:
+    """trace 의 도구 기록에서 환자 데이터와 KCD 검색 결과를 contexts 로 모은다. 같은 doc_id 는 첫 것만 둔다."""
     builders = {
         "get_patient_context": _patient_contexts,
         "get_changes_since_last_note": _changes_contexts,
         "search_kcd_codes": _kcd_contexts,
     }
     contexts, seen = [], set()
-    for name, _, output in calls:
-        if name not in builders or not isinstance(output, dict):
+    for record in trace:
+        if record["step"] not in builders or not isinstance(record["output"], dict):
             continue
-        for context in builders[name](output):
+        for context in builders[record["step"]](record["output"]):
             if context["doc_id"] not in seen:
                 seen.add(context["doc_id"])
                 contexts.append(context)
@@ -144,9 +114,8 @@ def _build_contexts(calls: list) -> list[dict]:
 def query(request: QueryRequest) -> dict:
     """질문으로 에이전트를 돌려 answer·contexts·trace 를 돌려준다."""
     result = run(request.question)
-    calls = _tool_calls(result["messages"])
     return {
         "answer": result["answer"],
-        "contexts": _build_contexts(calls),
-        "trace": _build_trace(calls, result["answer"]),
+        "contexts": _build_contexts(result["trace"]),
+        "trace": result["trace"],
     }

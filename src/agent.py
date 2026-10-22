@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 
 from src.guards import REFUSAL, DraftState, InputGuard, OutputGuard
 from src.tools import get_changes_since_last_note, get_patient_context, search_kcd_codes
+from src.tracer import FileTracer
 
 load_dotenv()
 
@@ -88,15 +89,16 @@ agent = create_agent(
 
 
 def run(question: str) -> dict:
-    """질문 하나로 에이전트를 돌려 SOAP 초안(answer)과 대화 메시지 전체를 돌려준다. 거절되면 answer 는 거절 문구다."""
-    result = agent.invoke({"messages": [HumanMessage(question)]})
+    """질문 하나로 에이전트를 돌려 SOAP 초안(answer)과 FileTracer 기록(trace)을 돌려준다. 거절되면 answer 는 거절 문구다."""
+    tracer = FileTracer()
+    result = agent.invoke({"messages": [HumanMessage(question)]}, config={"callbacks": [tracer]})
     if result.get("refused"):
-        return {"answer": {"refusal": REFUSAL}, "messages": result["messages"]}
-    draft = result["draft"]
-    return {
-        "answer": {**draft.model_dump(), "notice": NOTICE},
-        "messages": result["messages"],
-    }
+        answer = {"refusal": REFUSAL}
+        tracer.add("input_guard", question, answer)
+    else:
+        answer = {**result["draft"].model_dump(), "notice": NOTICE}
+    tracer.flush()
+    return {"answer": answer, "trace": tracer.records}
 
 
 if __name__ == "__main__":
