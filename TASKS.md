@@ -13,7 +13,7 @@
   - 확인: P001 로 부르면 기저질환·알레르기·입력 상병(J18.9)·직전 경과기록 본문이 나온다
 - [x] T4. get_changes_since_last_note 최소판: Lab 이상치+직전값, 신규 판독만
   - 확인: P001 로 부르면 Na 128(직전 130)과 신규 흉부 X선 판독이 나온다
-- [ ] T5. 임시 KCD 검색: data/kcd9.csv 샘플 몇 줄 + BM25 검색 + search_kcd_codes
+- [x] T5. 임시 KCD 검색: data/kcd9.csv 샘플 몇 줄 + BM25 검색 + search_kcd_codes
   - 확인: "저나트륨혈증"을 검색하면 E87.1 이 코드·명칭·출처(KCD/E87.1)로 나온다
 - [ ] T6. Agent 와 구조화 출력: src/agent.py (create_agent + 도구 3개 + 짧은 시스템 프롬프트 + SOAP Pydantic 모델)
   - 확인: P001 질문으로 실행하면 S·O·A·P, 기존 상병, 새 제안(E87.1 포함), 고정 문구가 나온다

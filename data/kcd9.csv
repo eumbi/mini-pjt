@@ -1,0 +1,14 @@
+code,name_ko,name_en
+E86,체액량 감소,Volume depletion
+E87.0,고삼투압 및 고나트륨혈증,Hyperosmolality and hypernatraemia
+E87.1,저삼투압 및 저나트륨혈증,Hypo-osmolality and hyponatraemia
+E87.2,산증,Acidosis
+E87.5,고칼륨혈증,Hyperkalaemia
+E87.6,저칼륨혈증,Hypokalaemia
+E11.9,합병증을 동반하지 않은 2형 당뇨병,Type 2 diabetes mellitus without complications
+I10,본태성(일차성) 고혈압,Essential (primary) hypertension
+J18.1,상세불명의 대엽성 폐렴,"Lobar pneumonia, unspecified"
+J18.9,상세불명의 폐렴,"Pneumonia, unspecified"
+J90,달리 분류되지 않은 흉막삼출,"Pleural effusion, not elsewhere classified"
+N17.9,상세불명의 급성 신부전,"Acute renal failure, unspecified"
+D62,급성 출혈후빈혈,Acute posthaemorrhagic anaemia
