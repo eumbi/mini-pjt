@@ -5,10 +5,12 @@ import os
 
 from dotenv import load_dotenv
 from langchain.agents import create_agent
+from langchain.agents.middleware import AgentMiddleware
 from langchain_aws import ChatBedrockConverse
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
 
+from src.guards import DraftState, OutputGuard
 from src.tools import get_changes_since_last_note, get_patient_context, search_kcd_codes
 
 load_dotenv()
@@ -56,22 +58,38 @@ llm = ChatBedrockConverse(
     model=os.environ["BEDROCK_MODEL_ID"], region_name="us-east-1", temperature=0
 )
 
+structured_llm = llm.with_structured_output(SoapDraft)
+
+
+class SoapFormatter(AgentMiddleware):
+    """Agent 가 도구 호출을 마치면 대화 전체를 SoapDraft 초안으로 정리해 상태(draft)에 담는다."""
+
+    state_schema = DraftState
+
+    def after_model(self, state: DraftState, runtime) -> dict | None:
+        """마지막 모델 응답에 도구 호출이 없을 때만 with_structured_output 으로 초안을 만든다."""
+        if state["messages"][-1].tool_calls:
+            return None
+        # Bedrock 은 assistant 메시지로 끝나는 대화를 받지 않으므로 정리 지시를 마지막 user 메시지로 붙인다
+        draft = structured_llm.invoke(
+            [SystemMessage(SYSTEM_PROMPT), *state["messages"], HumanMessage(FORMAT_PROMPT)]
+        )
+        return {"draft": draft}
+
+
+# after_model 은 목록 뒤에서부터 돌므로 SoapFormatter 가 초안을 만든 뒤 OutputGuard 가 검사한다
 agent = create_agent(
     model=llm,
     tools=[get_patient_context, get_changes_since_last_note, search_kcd_codes],
     system_prompt=SYSTEM_PROMPT,
+    middleware=[OutputGuard(), SoapFormatter()],
 )
-
-structured_llm = llm.with_structured_output(SoapDraft)
 
 
 def run(question: str) -> dict:
     """질문 하나로 에이전트를 돌려 SOAP 초안(answer)과 대화 메시지 전체를 돌려준다."""
     result = agent.invoke({"messages": [HumanMessage(question)]})
-    # Bedrock 은 assistant 메시지로 끝나는 대화를 받지 않으므로 정리 지시를 마지막 user 메시지로 붙인다
-    draft = structured_llm.invoke(
-        [SystemMessage(SYSTEM_PROMPT), *result["messages"], HumanMessage(FORMAT_PROMPT)]
-    )
+    draft = result["draft"]
     return {
         "answer": {**draft.model_dump(), "notice": NOTICE},
         "messages": result["messages"],
