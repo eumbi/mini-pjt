@@ -3,6 +3,7 @@
 data/kcd9.csv 를 BM25(kiwipiepy 토크나이저)와 벡터 검색(Amazon Titan Text Embeddings V2, Chroma)을
 EnsembleRetriever 로 합친 하이브리드 검색으로 찾는다. Chroma DB 는 `python -m src.retriever` 로
 미리 만들어 두고, 검색할 때는 불러오기만 한다.
+상위 결과와 앞 세 자리가 같은 코드(같은 묶음)도 따로 모아 세부 코드를 놓치지 않게 한다.
 """
 
 import csv
@@ -31,6 +32,9 @@ REGION = "us-east-1"
 TOP_K = 10
 BUILD_BATCH = 500
 BUILD_WORKERS = 8
+# 같은 묶음을 펼칠 상위 결과 수와, 너무 넓어서 펼치지 않을 묶음 크기
+CATEGORY_HITS = 3
+MAX_CATEGORY_SIZE = 15
 
 _kiwi = Kiwi()
 # Agent 가 search_kcd_codes 를 병렬로 부를 때 검색기를 한 번만 만들도록 첫 초기화를 잠근다
@@ -123,6 +127,30 @@ def search(query: str) -> list[Document]:
     with _init_lock:
         retriever = _ensemble_retriever()
     return retriever.invoke(query)[:TOP_K]
+
+
+@lru_cache(maxsize=1)
+def _categories() -> dict[str, list[Document]]:
+    """kcd9.csv 문서를 앞 세 자리 코드(묶음)별로 모은다."""
+    categories: dict[str, list[Document]] = {}
+    for doc in _load_documents():
+        categories.setdefault(doc.metadata["code"][:3], []).append(doc)
+    return categories
+
+
+def same_category(docs: list[Document]) -> list[Document]:
+    """검색 상위 3건과 앞 세 자리가 같은 코드 중 검색 결과에 없는 것을 코드 순서로 돌려준다.
+
+    하위 코드가 15개를 넘는 묶음은 너무 넓어 펼치지 않는다.
+    """
+    found = {doc.metadata["code"] for doc in docs}
+    prefixes = dict.fromkeys(doc.metadata["code"][:3] for doc in docs[:CATEGORY_HITS])
+    siblings = []
+    for prefix in prefixes:
+        members = _categories().get(prefix, [])
+        if len(members) <= MAX_CATEGORY_SIZE:
+            siblings += [doc for doc in members if doc.metadata["code"] not in found]
+    return siblings
 
 
 if __name__ == "__main__":

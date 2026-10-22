@@ -86,9 +86,10 @@ def _changes_contexts(output: dict) -> list[dict]:
 
 
 def _kcd_contexts(output: dict) -> list[dict]:
-    """search_kcd_codes 결과를 KCD/{코드} 문서들로 나눈다."""
+    """search_kcd_codes 결과(상위 결과와 같은 묶음 코드)를 KCD/{코드} 문서들로 나눈다."""
     return [
-        {"doc_id": r["source"], "text": f"{r['code']} {r['name']}"} for r in output["results"]
+        {"doc_id": r["source"], "text": f"{r['code']} {r['name']}"}
+        for r in output["results"] + output.get("same_category", [])
     ]
 
 

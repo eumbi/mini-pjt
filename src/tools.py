@@ -6,7 +6,7 @@ from pathlib import Path
 
 from langchain_core.tools import tool
 
-from src.retriever import search
+from src.retriever import same_category, search
 
 PATIENTS_DIR = Path(__file__).resolve().parent.parent / "data" / "patients"
 
@@ -141,20 +141,23 @@ def get_changes_since_last_note(patient_id: str) -> dict | str:
 def search_kcd_codes(query: str) -> dict | str:
     """소견 검색어 하나로 KCD-9 후보 코드를 검색한다.
 
-    검색 결과 상위 10건을 코드, 한글 명칭, 출처(KCD/{코드})로 돌려주기만 하고 고르지 않는다.
+    검색 결과 상위 10건(results)과, 상위 3건과 앞 세 자리가 같은 나머지 코드(same_category)를
+    코드, 한글 명칭, 출처(KCD/{코드})로 돌려주기만 하고 고르지 않는다.
     어떤 코드를 쓸지는 Agent 가 판단한다. 결과가 없으면 '검색 결과 없음'을 돌려준다.
     """
     docs = search(query)
     if not docs:
         return "검색 결과 없음"
+
+    def entry(doc) -> dict:
+        return {
+            "code": doc.metadata["code"],
+            "name": doc.metadata["name_ko"],
+            "source": f"KCD/{doc.metadata['code']}",
+        }
+
     return {
         "query": query,
-        "results": [
-            {
-                "code": doc.metadata["code"],
-                "name": doc.metadata["name_ko"],
-                "source": f"KCD/{doc.metadata['code']}",
-            }
-            for doc in docs
-        ],
+        "results": [entry(doc) for doc in docs],
+        "same_category": [entry(doc) for doc in same_category(docs)],
     }
