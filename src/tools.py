@@ -18,14 +18,25 @@ def _load_patient(patient_id: str) -> dict:
 
 
 @tool
-def get_patient_context(patient_id: str) -> dict:
+def get_patient_context(patient_id: str) -> dict | str:
     """환자 ID 로 경과기록 작성의 출발점이 되는 환자 맥락을 조회한다.
 
-    나이·성별, 입원 시각, 기저질환, 알레르기, 현재 입력된 상병, 직전 경과기록 본문을 돌려준다.
-    start_note.source 는 어느 기록에서 출발했는지를 나타낸다 (progress_note: 직전 경과기록).
+    나이·성별, 입원 시각, 기저질환, 알레르기, 현재 입력된 상병, 출발 기록 본문을 돌려준다.
+    출발 기록은 직전 경과기록이고, 없으면(입원 첫날) 입원기록, 입원기록도 없으면 응급실 기록이다.
+    start_note.source 는 어느 기록에서 출발했는지를 나타낸다
+    (progress_note: 직전 경과기록, admission_note: 입원기록, er_note: 응급실 기록).
+    등록되지 않은 환자 ID 면 '데이터 없음: 등록되지 않은 환자'를 돌려준다.
     """
+    if not (PATIENTS_DIR / f"{patient_id}.json").exists():
+        return "데이터 없음: 등록되지 않은 환자"
     patient = _load_patient(patient_id)
-    last_note = max(patient["progress_notes"], key=lambda note: note["written_at"])
+    if patient["progress_notes"]:
+        source = "progress_note"
+        last_note = max(patient["progress_notes"], key=lambda note: note["written_at"])
+    elif patient.get("admission_note"):
+        source, last_note = "admission_note", patient["admission_note"]
+    else:
+        source, last_note = "er_note", patient["er_note"]
     return {
         "patient_id": patient["patient_id"],
         "age": patient["age"],
@@ -35,7 +46,7 @@ def get_patient_context(patient_id: str) -> dict:
         "allergies": patient["allergies"],
         "diagnoses": patient["diagnoses"],
         "start_note": {
-            "source": "progress_note",
+            "source": source,
             "written_at": last_note["written_at"],
             "text": last_note["text"],
         },

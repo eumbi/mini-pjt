@@ -25,7 +25,7 @@
   - 확인: 각 케이스 expected_traits 의 수치와 변화가 해당 JSON 에 그대로 있다
 - [x] T9. 더미 환자 P009~P013, P015 (6명). P003 은 입원기록 없이 응급실 기록만
   - 확인: 같은 대조가 통과하고 P003.json 에 입원기록이 없다
-- [ ] T10. get_patient_context 분기: 입원기록 → 응급실 기록 → 없는 환자
+- [x] T10. get_patient_context 분기: 입원기록 → 응급실 기록 → 없는 환자
   - 확인: P010 은 입원기록, P003 은 응급실 기록에서 출발하고, P999 는 '데이터 없음: 등록되지 않은 환자'다
 - [ ] T11. get_changes_since_last_note 완성: Lab 추세(3회 이상), 투약 비교, '변화 없음'
   - 확인: P006 은 Hb 추세 3개 값, P002 는 ceftriaxone→ciprofloxacin 변경이 나오고, P012 는 세 항목 모두 '변화 없음'이다
