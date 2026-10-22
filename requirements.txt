@@ -1,0 +1,22 @@
+# 공통
+boto3==1.43.111
+python-dotenv==1.2.4
+
+# LangChain · LangGraph
+langchain==1.4.4
+langchain-aws==1.8.1
+langchain-core==1.6.9
+langchain-community==0.4.2
+langchain-classic==1.0.8
+langgraph==1.2.14
+
+# RAG (KCD-9 검색)
+langchain-chroma==1.1.0
+rank-bm25==0.2.2
+kiwipiepy==0.24.0
+
+# API 서버
+fastapi==0.159.1
+uvicorn==0.54.0
+
+# 평가: ragas 는 Python 3.14 에서 의존 패키지(scikit-network) 빌드가 실패해 T20 에서 다시 정한다

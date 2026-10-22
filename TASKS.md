@@ -5,7 +5,7 @@
 - "확인"을 통과해야 끝난 것으로 본다
 
 ## M1. 최소 경로 — 1번 케이스(P001)가 /query 에서 답변까지 한 번 돈다
-- [ ] T1. 실행 환경: requirements.txt 작성, .env 에 Bedrock 자격 증명
+- [x] T1. 실행 환경: requirements.txt 작성, .env 에 Bedrock 자격 증명과 BEDROCK_MODEL_ID
   - 확인: Bedrock 모델을 한 번 호출해 응답 문자열이 출력된다
 - [ ] T2. P001 더미 데이터 1명: data/patients/P001.json
   - 확인: 1번 케이스 expected_traits 의 수치(Na 133→130→128, CRP 12.4→6.1, X선 판독)가 파일에 그대로 있다
