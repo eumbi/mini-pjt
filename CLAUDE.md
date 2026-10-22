@@ -2,7 +2,7 @@
 
 ## 기술 스택
 - Python, LangChain, LangGraph
-- 모델은 Amazon Bedrock (ChatBedrockConverse, region us-east-1, temperature=0). 모델 ID 는 코드에 적지 않고 .env 의 BEDROCK_MODEL_ID 에서 읽는다 (지금 값: us.anthropic.claude-sonnet-4-6)
+- 모델은 Amazon Bedrock (ChatBedrockConverse, region us-east-1, temperature=0). 모델 ID 는 코드에 적지 않고 .env 의 BEDROCK_MODEL_ID 에서 읽는다 (지금 값: us.anthropic.claude-haiku-4-5-20251001-v1:0. Sonnet 하루 토큰 한도 초과로 2026-10-22 에 바꿈)
 - Agent 생성은 langchain.agents 의 create_agent 를 쓴다
 - POST /query 서버는 FastAPI 엔드포인트 하나로 최소한만 둔다
 - answer 는 Pydantic 모델에 llm.with_structured_output 으로 담는다 (필수 패턴 1)

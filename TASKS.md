@@ -47,7 +47,7 @@
 ## M4. 평가
 - [x] T18. run_eval.py ① 코드 검사: 20건 실행, 도구 호출, 상병 재현율(완전·앞 세 자리·기준선), 자동 가드레일 위반
   - 확인: 한 번 실행으로 재현율 두 점수와 기준선, 위반 건수가 출력된다
-- [ ] T19. run_eval.py ② LLM-as-Judge: 케이스 pass/fail, O 반영률, S·신체 진찰 지어냄
+- [x] T19. run_eval.py ② LLM-as-Judge: 케이스 pass/fail, O 반영률, S·신체 진찰 지어냄
   - 확인: 케이스별 PASS/FAIL 과 "XX/20 통과"가 출력된다
 - [ ] T20. run_eval.py ③ RAGAS 4개 지표
   - 확인: context_recall·context_precision·faithfulness·answer_relevancy 값이 출력된다
