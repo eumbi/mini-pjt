@@ -1,0 +1,43 @@
+{
+  "patient_id": "P007",
+  "age": 79,
+  "sex": "M",
+  "admitted_at": "2026-10-18T10:00",
+  "underlying_diseases": ["고혈압"],
+  "allergies": [],
+  "diagnoses": [
+    {"code": "I63.9", "name": "상세불명의 뇌경색증"},
+    {"code": "I10", "name": "본태성(일차성) 고혈압"}
+  ],
+  "progress_notes": [
+    {
+      "written_at": "2026-10-20T14:00",
+      "text": "S: 보호자 진술상 어제 저녁 식사 중 사레가 걸려 한참 기침했다고 함.\nO: BT 36.9℃, BP 148/86, HR 82, RR 18, SpO2 96%(room air). 우측 상하지 근력 3등급. 발음 부정확. WBC 8200/µL(입원 시).\nA: 상세불명의 뇌경색증(I63.9), 본태성 고혈압(I10).\nP: aspirin, atorvastatin, amlodipine 을 유지하고, 연하 기능 평가를 의뢰한다."
+    }
+  ],
+  "admission_note": {
+    "written_at": "2026-10-18T11:00",
+    "text": "주호소: 오늘 아침부터 우측 팔다리 힘 빠짐, 말이 어눌함.\n현병력: 고혈압으로 약을 먹는 79세 남자로, 오늘 아침 기상 후 우측 팔다리 힘 빠짐과 발음 장애가 있어 입원함.\n진찰: BP 168/94, HR 78. 우측 상하지 근력 3등급, 구음장애.\n계획: 항혈소판제와 스타틴을 시작한다."
+  },
+  "er_note": {
+    "written_at": "2026-10-18T08:30",
+    "text": "우측 편마비와 구음장애로 내원. 뇌 MRI 촬영 후 입원 결정."
+  },
+  "labs": [
+    {"name": "WBC", "value": 8200, "unit": "/µL", "ref_low": 4000, "ref_high": 10000, "measured_at": "2026-10-18T11:00"},
+    {"name": "CRP", "value": 0.3, "unit": "mg/dL", "ref_low": 0, "ref_high": 0.5, "measured_at": "2026-10-18T11:00"},
+    {"name": "WBC", "value": 14600, "unit": "/µL", "ref_low": 4000, "ref_high": 10000, "measured_at": "2026-10-21T06:00"},
+    {"name": "CRP", "value": 7.9, "unit": "mg/dL", "ref_low": 0, "ref_high": 0.5, "measured_at": "2026-10-21T06:00"}
+  ],
+  "readings": [
+    {"exam": "뇌 MRI", "read_at": "2026-10-18T09:30", "finding": "좌측 중대뇌동맥 영역 확산강조영상 고신호"},
+    {"exam": "흉부 X선", "read_at": "2026-10-18T09:00", "finding": "급성 폐 병변 없음"},
+    {"exam": "흉부 X선", "read_at": "2026-10-21T09:00", "finding": "우하엽 침윤"}
+  ],
+  "prescriptions": [
+    {"drug": "aspirin", "dose": "100mg", "route": "PO", "frequency": "qd", "started_at": "2026-10-18T11:00", "stopped_at": null},
+    {"drug": "atorvastatin", "dose": "40mg", "route": "PO", "frequency": "qd", "started_at": "2026-10-18T11:00", "stopped_at": null},
+    {"drug": "amlodipine", "dose": "5mg", "route": "PO", "frequency": "qd", "started_at": "2026-10-18T11:00", "stopped_at": null},
+    {"drug": "ampicillin/sulbactam", "dose": "3g", "route": "IV", "frequency": "q6h", "started_at": "2026-10-21T10:00", "stopped_at": null}
+  ]
+}

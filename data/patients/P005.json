@@ -1,0 +1,41 @@
+{
+  "patient_id": "P005",
+  "age": 74,
+  "sex": "M",
+  "admitted_at": "2026-10-19T20:00",
+  "underlying_diseases": ["만성 폐쇄성 폐질환"],
+  "allergies": [],
+  "diagnoses": [
+    {"code": "J44.1", "name": "상세불명의 급성 악화를 동반한 만성 폐쇄성 폐질환"}
+  ],
+  "progress_notes": [
+    {
+      "written_at": "2026-10-20T15:00",
+      "text": "S: 밤에 숨이 차서 잠을 잘 못 잤다고 함. 가래 늘었음.\nO: BP 138/80, HR 104, RR 26, SpO2 88%(비강 캐뉼라 2L/min). 양측 호기성 천명음. ABG PaO2 50 mmHg, PaCO2 58 mmHg(입원 시).\nA: 급성 악화를 동반한 만성 폐쇄성 폐질환(J44.1).\nP: methylprednisolone 정맥 투여와 분무 기관지확장제를 유지하고, 내일 아침 동맥혈가스를 다시 확인한다."
+    }
+  ],
+  "admission_note": {
+    "written_at": "2026-10-19T21:00",
+    "text": "주호소: 3일 전부터 숨참 악화, 가래 증가.\n현병력: 만성 폐쇄성 폐질환으로 흡입제를 쓰는 74세 남자로, 3일 전부터 숨참과 가래가 늘어 입원함.\n진찰: BP 142/84, HR 110, RR 28, SpO2 86%(room air). 양측 호기성 천명음.\n계획: 산소 투여, 전신 스테로이드(methylprednisolone), 분무 기관지확장제를 시작한다."
+  },
+  "er_note": {
+    "written_at": "2026-10-19T18:30",
+    "text": "숨참 악화로 내원. SpO2 86%(room air). 흉부 X선과 동맥혈가스 검사 후 입원 결정."
+  },
+  "labs": [
+    {"name": "PaO2", "value": 50, "unit": "mmHg", "ref_low": 80, "ref_high": 100, "measured_at": "2026-10-19T21:00"},
+    {"name": "PaCO2", "value": 58, "unit": "mmHg", "ref_low": 35, "ref_high": 45, "measured_at": "2026-10-19T21:00"},
+    {"name": "WBC", "value": 9800, "unit": "/µL", "ref_low": 4000, "ref_high": 10000, "measured_at": "2026-10-19T21:00"},
+    {"name": "PaO2", "value": 55, "unit": "mmHg", "ref_low": 80, "ref_high": 100, "measured_at": "2026-10-21T06:00"},
+    {"name": "PaCO2", "value": 52, "unit": "mmHg", "ref_low": 35, "ref_high": 45, "measured_at": "2026-10-21T06:00"}
+  ],
+  "readings": [
+    {"exam": "흉부 X선", "read_at": "2026-10-19T19:00", "finding": "폐 과팽창, 급성 침윤 없음"}
+  ],
+  "prescriptions": [
+    {"drug": "methylprednisolone", "dose": "40mg", "route": "IV", "frequency": "q24h", "started_at": "2026-10-19T21:30", "stopped_at": "2026-10-21T09:00"},
+    {"drug": "methylprednisolone", "dose": "20mg", "route": "IV", "frequency": "q24h", "started_at": "2026-10-21T09:00", "stopped_at": null},
+    {"drug": "ipratropium/salbutamol", "dose": "1 vial", "route": "분무", "frequency": "q6h", "started_at": "2026-10-19T21:30", "stopped_at": null},
+    {"drug": "산소", "dose": "2L/min", "route": "비강 캐뉼라", "frequency": "지속", "started_at": "2026-10-19T21:00", "stopped_at": null}
+  ]
+}

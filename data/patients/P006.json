@@ -1,0 +1,39 @@
+{
+  "patient_id": "P006",
+  "age": 66,
+  "sex": "M",
+  "admitted_at": "2026-10-19T03:00",
+  "underlying_diseases": ["무릎 골관절염"],
+  "allergies": [],
+  "diagnoses": [
+    {"code": "K92.2", "name": "상세불명의 위장출혈"}
+  ],
+  "progress_notes": [
+    {
+      "written_at": "2026-10-20T14:00",
+      "text": "S: 어제 저녁 흑색변 1회. 복통은 없다고 함.\nO: BP 112/70, HR 92, RR 18. 상복부 압통 없음. Hb 10.1 g/dL(입원 시) → 8.9 g/dL. 농축적혈구 2단위 수혈 완료.\nA: 상세불명의 위장출혈(K92.2).\nP: 금식을 유지하고 내일 위내시경을 시행한다. Hb 를 다시 확인한다."
+    }
+  ],
+  "admission_note": {
+    "written_at": "2026-10-19T04:00",
+    "text": "주호소: 하루 전부터 흑색변 3회, 어지러움.\n현병력: 무릎 골관절염으로 2주 전부터 소염진통제를 복용한 66세 남자로, 하루 전부터 흑색변과 어지러움이 있어 입원함.\n진찰: BP 104/64, HR 108, RR 20. 결막 창백. 상복부 압통 없음.\n계획: 금식, 수혈, 위내시경을 준비한다."
+  },
+  "er_note": {
+    "written_at": "2026-10-19T01:30",
+    "text": "흑색변과 어지러움으로 내원. BP 104/64, HR 108. 직장수지검사상 흑색변 확인 후 입원 결정."
+  },
+  "labs": [
+    {"name": "Hb", "value": 10.1, "unit": "g/dL", "ref_low": 13.0, "ref_high": 17.0, "measured_at": "2026-10-19T04:00"},
+    {"name": "BUN", "value": 38, "unit": "mg/dL", "ref_low": 8, "ref_high": 23, "measured_at": "2026-10-19T04:00"},
+    {"name": "Hb", "value": 8.9, "unit": "g/dL", "ref_low": 13.0, "ref_high": 17.0, "measured_at": "2026-10-20T06:00"},
+    {"name": "Hb", "value": 7.8, "unit": "g/dL", "ref_low": 13.0, "ref_high": 17.0, "measured_at": "2026-10-21T06:00"}
+  ],
+  "readings": [
+    {"exam": "위내시경", "read_at": "2026-10-21T11:00", "finding": "위체부 소만부 2cm 궤양, 노출 혈관 동반, 활동성 출혈은 없음"}
+  ],
+  "prescriptions": [
+    {"drug": "농축적혈구", "dose": "2단위", "route": "IV", "frequency": "1회", "started_at": "2026-10-19T05:00", "stopped_at": "2026-10-19T09:00"},
+    {"drug": "농축적혈구", "dose": "2단위", "route": "IV", "frequency": "1회", "started_at": "2026-10-21T08:00", "stopped_at": null},
+    {"drug": "pantoprazole", "dose": "40mg", "route": "IV", "frequency": "q12h", "started_at": "2026-10-21T11:30", "stopped_at": null}
+  ]
+}

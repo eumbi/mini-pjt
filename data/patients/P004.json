@@ -1,0 +1,41 @@
+{
+  "patient_id": "P004",
+  "age": 81,
+  "sex": "M",
+  "admitted_at": "2026-10-18T15:00",
+  "underlying_diseases": ["고혈압", "심부전"],
+  "allergies": [],
+  "diagnoses": [
+    {"code": "I50.0", "name": "울혈성 심부전"},
+    {"code": "I10", "name": "본태성(일차성) 고혈압"}
+  ],
+  "progress_notes": [
+    {
+      "written_at": "2026-10-20T14:00",
+      "text": "S: 누우면 숨이 차서 베개 두 개를 베고 잔다고 함.\nO: BP 146/88, HR 96, RR 22, SpO2 93%(room air). 양측 하폐야 수포음. 양측 하지 부종 2+. NT-proBNP 3200 pg/mL(입원 시).\nA: 울혈성 심부전(I50.0), 본태성 고혈압(I10).\nP: furosemide 와 amlodipine 을 유지하고, 체중과 섭취·배설량을 매일 확인한다."
+    }
+  ],
+  "admission_note": {
+    "written_at": "2026-10-18T16:00",
+    "text": "주호소: 1주 전부터 숨참과 다리 부종.\n현병력: 고혈압과 심부전으로 외래 추적 중인 81세 남자로, 1주 전부터 운동 시 숨참이 심해지고 양측 다리 부종이 늘어 입원함.\n진찰: BP 152/90, HR 102, RR 24, SpO2 92%(room air). 양측 하폐야 수포음, 양측 하지 부종 2+.\n계획: 정맥 이뇨제(furosemide)를 시작한다."
+  },
+  "er_note": {
+    "written_at": "2026-10-18T13:30",
+    "text": "숨참과 다리 부종으로 내원. SpO2 92%. 흉부 X선 촬영 후 입원 결정."
+  },
+  "labs": [
+    {"name": "NT-proBNP", "value": 3200, "unit": "pg/mL", "ref_low": 0, "ref_high": 450, "measured_at": "2026-10-18T16:30"},
+    {"name": "Cr", "value": 1.0, "unit": "mg/dL", "ref_low": 0.7, "ref_high": 1.3, "measured_at": "2026-10-18T16:30"},
+    {"name": "NT-proBNP", "value": 5800, "unit": "pg/mL", "ref_low": 0, "ref_high": 450, "measured_at": "2026-10-21T06:00"},
+    {"name": "Cr", "value": 1.1, "unit": "mg/dL", "ref_low": 0.7, "ref_high": 1.3, "measured_at": "2026-10-21T06:00"}
+  ],
+  "readings": [
+    {"exam": "흉부 X선", "read_at": "2026-10-18T14:00", "finding": "심비대, 양측 폐문부 혈관 음영 증가"},
+    {"exam": "흉부 CT", "read_at": "2026-10-21T10:00", "finding": "우측 흉막삼출"}
+  ],
+  "prescriptions": [
+    {"drug": "furosemide", "dose": "20mg", "route": "IV", "frequency": "q12h", "started_at": "2026-10-18T16:30", "stopped_at": "2026-10-21T08:00"},
+    {"drug": "furosemide", "dose": "40mg", "route": "IV", "frequency": "q12h", "started_at": "2026-10-21T08:00", "stopped_at": null},
+    {"drug": "amlodipine", "dose": "5mg", "route": "PO", "frequency": "qd", "started_at": "2026-10-18T16:30", "stopped_at": null}
+  ]
+}

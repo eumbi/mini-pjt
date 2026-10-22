@@ -1,0 +1,33 @@
+{
+  "patient_id": "P003",
+  "age": 68,
+  "sex": "F",
+  "admitted_at": "2026-10-21T07:00",
+  "underlying_diseases": [],
+  "allergies": [],
+  "diagnoses": [
+    {"code": "R50.9", "name": "상세불명의 열"}
+  ],
+  "progress_notes": [],
+  "admission_note": null,
+  "er_note": {
+    "written_at": "2026-10-21T02:30",
+    "text": "오한을 동반한 39.2℃ 발열로 내원. BP 96/58, HR 112, RR 24, SpO2 96%(room air). 하루 전부터 소변량이 줄었다고 함. 혈액배양 2세트 채취 후 항생제와 수액을 시작하고 입원 결정."
+  },
+  "labs": [
+    {"name": "WBC", "value": 15200, "unit": "/µL", "ref_low": 4000, "ref_high": 10000, "measured_at": "2026-10-21T02:40"},
+    {"name": "Lactate", "value": 2.8, "unit": "mmol/L", "ref_low": 0.5, "ref_high": 2.0, "measured_at": "2026-10-21T02:40"},
+    {"name": "Cr", "value": 1.6, "unit": "mg/dL", "ref_low": 0.5, "ref_high": 1.1, "measured_at": "2026-10-21T02:40"},
+    {"name": "WBC", "value": 18900, "unit": "/µL", "ref_low": 4000, "ref_high": 10000, "measured_at": "2026-10-21T13:00"},
+    {"name": "Lactate", "value": 4.1, "unit": "mmol/L", "ref_low": 0.5, "ref_high": 2.0, "measured_at": "2026-10-21T13:00"},
+    {"name": "Cr", "value": 2.4, "unit": "mg/dL", "ref_low": 0.5, "ref_high": 1.1, "measured_at": "2026-10-21T13:00"}
+  ],
+  "readings": [
+    {"exam": "흉부 X선", "read_at": "2026-10-21T03:00", "finding": "급성 폐 병변 없음"},
+    {"exam": "혈액배양", "read_at": "2026-10-21T14:00", "finding": "2세트 배양 진행 중, 결과 대기"}
+  ],
+  "prescriptions": [
+    {"drug": "piperacillin/tazobactam", "dose": "4.5g", "route": "IV", "frequency": "q6h", "started_at": "2026-10-21T03:00", "stopped_at": null},
+    {"drug": "생리식염수", "dose": "1000mL", "route": "IV", "frequency": "q8h", "started_at": "2026-10-21T03:00", "stopped_at": null}
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "patient_id": "P008",
+  "age": 52,
+  "sex": "F",
+  "admitted_at": "2026-10-19T12:00",
+  "underlying_diseases": [],
+  "allergies": [],
+  "diagnoses": [
+    {"code": "K85.9", "name": "상세불명의 급성 췌장염"}
+  ],
+  "progress_notes": [
+    {
+      "written_at": "2026-10-20T15:00",
+      "text": "S: 상복부 통증이 등으로 뻗친다고 함. 구역감 있음.\nO: BT 37.6℃, BP 130/80, HR 98, RR 20. 상복부 압통. lipase 1850 U/L(입원 시) → 920 U/L.\nA: 상세불명의 급성 췌장염(K85.9).\nP: 금식과 정맥 수액을 유지하고, 내일 혈액검사와 복부 CT 를 시행한다."
+    }
+  ],
+  "admission_note": {
+    "written_at": "2026-10-19T13:00",
+    "text": "주호소: 하루 전부터 등으로 뻗치는 상복부 통증, 구토.\n현병력: 특이 과거력 없는 52세 여자로, 하루 전부터 상복부 통증과 구토가 있어 입원함. 음주는 하지 않는다고 함.\n진찰: BT 37.8℃, BP 134/82, HR 104. 상복부 압통.\n계획: 금식, 정맥 수액, 진통제를 시작한다."
+  },
+  "er_note": {
+    "written_at": "2026-10-19T10:30",
+    "text": "상복부 통증과 구토로 내원. 혈액검사와 복부 초음파 후 입원 결정."
+  },
+  "labs": [
+    {"name": "lipase", "value": 1850, "unit": "U/L", "ref_low": 13, "ref_high": 60, "measured_at": "2026-10-19T13:00"},
+    {"name": "lipase", "value": 920, "unit": "U/L", "ref_low": 13, "ref_high": 60, "measured_at": "2026-10-20T06:00"},
+    {"name": "lipase", "value": 410, "unit": "U/L", "ref_low": 13, "ref_high": 60, "measured_at": "2026-10-21T06:00"},
+    {"name": "중성지방", "value": 1200, "unit": "mg/dL", "ref_low": 0, "ref_high": 150, "measured_at": "2026-10-21T06:00"}
+  ],
+  "readings": [
+    {"exam": "복부 초음파", "read_at": "2026-10-19T11:30", "finding": "담낭 결석 없음, 담관 확장 없음"},
+    {"exam": "복부 CT", "read_at": "2026-10-21T10:00", "finding": "췌장 부종, 췌장 주위 액체 저류"}
+  ],
+  "prescriptions": [
+    {"drug": "하트만 용액", "dose": "1000mL", "route": "IV", "frequency": "q8h", "started_at": "2026-10-19T13:00", "stopped_at": null},
+    {"drug": "acetaminophen", "dose": "1g", "route": "IV", "frequency": "q8h", "started_at": "2026-10-19T13:00", "stopped_at": null}
+  ]
+}
