@@ -1,0 +1,39 @@
+{
+  "patient_id": "P011",
+  "age": 55,
+  "sex": "F",
+  "admitted_at": "2026-10-16T22:00",
+  "underlying_diseases": ["비만"],
+  "allergies": [],
+  "diagnoses": [
+    {"code": "I26.9", "name": "급성 폐성 심장증에 대한 언급이 없는 폐색전증"}
+  ],
+  "progress_notes": [
+    {
+      "written_at": "2026-10-20T14:00",
+      "text": "S: 숨참은 줄었고 왼쪽 다리 붓기가 조금 남아 있다고 함.\nO: BP 128/76, HR 88, RR 18, SpO2 96%(room air). 좌측 하지 부종. PLT 142000/µL.\nA: 급성 폐성 심장증에 대한 언급이 없는 폐색전증(I26.9), 항응고 치료 중.\nP: heparin 정맥 주입을 유지하고, 내일 아침 혈소판을 다시 확인한다."
+    }
+  ],
+  "admission_note": {
+    "written_at": "2026-10-16T23:00",
+    "text": "주호소: 하루 전부터 갑자기 숨참, 흉통.\n현병력: 비만이 있는 55세 여자로, 1주 전부터 왼쪽 다리가 붓다가 하루 전부터 숨참과 흉통이 생겨 응급실을 거쳐 입원함.\n진찰: BP 132/80, HR 112, RR 24, SpO2 91%(room air). 좌측 하지 부종.\n계획: heparin 정맥 주입을 시작한다."
+  },
+  "er_note": {
+    "written_at": "2026-10-16T20:00",
+    "text": "숨참과 흉통으로 내원. SpO2 91%(room air), HR 112. 흉부 CT 혈관조영 후 입원 결정."
+  },
+  "labs": [
+    {"name": "PLT", "value": 210000, "unit": "/µL", "ref_low": 150000, "ref_high": 400000, "measured_at": "2026-10-16T20:30"},
+    {"name": "D-dimer", "value": 6.8, "unit": "µg/mL", "ref_low": 0, "ref_high": 0.5, "measured_at": "2026-10-16T20:30"},
+    {"name": "PLT", "value": 142000, "unit": "/µL", "ref_low": 150000, "ref_high": 400000, "measured_at": "2026-10-20T06:00"},
+    {"name": "PLT", "value": 95000, "unit": "/µL", "ref_low": 150000, "ref_high": 400000, "measured_at": "2026-10-21T06:00"}
+  ],
+  "readings": [
+    {"exam": "흉부 CT 혈관조영", "read_at": "2026-10-16T21:30", "finding": "우하엽 폐동맥 분지 내 충만 결손"},
+    {"exam": "하지 정맥 초음파", "read_at": "2026-10-17T10:00", "finding": "좌측 슬와정맥 내 압박되지 않는 혈전"}
+  ],
+  "prescriptions": [
+    {"drug": "heparin", "dose": "18단위/kg/h", "route": "IV", "frequency": "지속 주입", "started_at": "2026-10-16T23:00", "stopped_at": "2026-10-21T09:00"},
+    {"drug": "rivaroxaban", "dose": "15mg", "route": "PO", "frequency": "bid", "started_at": "2026-10-21T09:00", "stopped_at": null}
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "patient_id": "P012",
+  "age": 69,
+  "sex": "F",
+  "admitted_at": "2026-10-18T11:00",
+  "underlying_diseases": ["고혈압"],
+  "allergies": [],
+  "diagnoses": [
+    {"code": "J18.9", "name": "상세불명의 폐렴"}
+  ],
+  "progress_notes": [
+    {
+      "written_at": "2026-10-20T14:00",
+      "text": "S: 기침은 거의 없어졌고 식사도 잘 한다고 함.\nO: BT 36.8℃, BP 126/74, HR 76, RR 16, SpO2 97%(room air). 청진상 좌하엽 수포음 소량. WBC 9100/µL, CRP 1.8 mg/dL.\nA: 상세불명의 폐렴(J18.9), 호전 중.\nP: ceftriaxone 을 유지하고, 경구 항생제 전환과 퇴원 시점을 검토한다."
+    }
+  ],
+  "admission_note": {
+    "written_at": "2026-10-18T12:00",
+    "text": "주호소: 4일 전부터 기침, 가래, 발열.\n현병력: 고혈압으로 외래 추적 중인 69세 여자로, 4일 전부터 기침과 가래, 38.2℃ 발열이 있어 입원함.\n진찰: BT 38.0℃, BP 134/80, HR 96, RR 20, SpO2 94%(room air). 청진상 좌하엽 수포음.\n계획: 정맥 항생제(ceftriaxone)를 시작한다."
+  },
+  "er_note": {
+    "written_at": "2026-10-18T09:30",
+    "text": "기침, 가래, 발열로 내원. BT 38.2℃, SpO2 94%. 흉부 X선 촬영 후 입원 결정."
+  },
+  "labs": [
+    {"name": "WBC", "value": 14200, "unit": "/µL", "ref_low": 4000, "ref_high": 10000, "measured_at": "2026-10-18T10:00"},
+    {"name": "CRP", "value": 9.6, "unit": "mg/dL", "ref_low": 0, "ref_high": 0.5, "measured_at": "2026-10-18T10:00"},
+    {"name": "WBC", "value": 9100, "unit": "/µL", "ref_low": 4000, "ref_high": 10000, "measured_at": "2026-10-20T06:00"},
+    {"name": "CRP", "value": 1.8, "unit": "mg/dL", "ref_low": 0, "ref_high": 0.5, "measured_at": "2026-10-20T06:00"},
+    {"name": "WBC", "value": 7400, "unit": "/µL", "ref_low": 4000, "ref_high": 10000, "measured_at": "2026-10-21T06:00"},
+    {"name": "Na", "value": 139, "unit": "mmol/L", "ref_low": 135, "ref_high": 145, "measured_at": "2026-10-21T06:00"},
+    {"name": "K", "value": 4.2, "unit": "mmol/L", "ref_low": 3.5, "ref_high": 5.0, "measured_at": "2026-10-21T06:00"}
+  ],
+  "readings": [
+    {"exam": "흉부 X선", "read_at": "2026-10-18T10:30", "finding": "좌하엽 경화 소견"}
+  ],
+  "prescriptions": [
+    {"drug": "ceftriaxone", "dose": "2g", "route": "IV", "frequency": "q24h", "started_at": "2026-10-18T12:00", "stopped_at": null},
+    {"drug": "amlodipine", "dose": "5mg", "route": "PO", "frequency": "qd", "started_at": "2026-10-18T12:00", "stopped_at": null}
+  ]
+}

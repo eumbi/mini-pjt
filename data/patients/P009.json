@@ -1,0 +1,42 @@
+{
+  "patient_id": "P009",
+  "age": 63,
+  "sex": "M",
+  "admitted_at": "2026-10-19T15:00",
+  "underlying_diseases": ["고혈압", "2형 당뇨병"],
+  "allergies": [],
+  "diagnoses": [
+    {"code": "N18.5", "name": "만성 콩팥병(5기)"}
+  ],
+  "progress_notes": [
+    {
+      "written_at": "2026-10-20T14:00",
+      "text": "S: 다리 붓기와 식욕 저하는 비슷하다고 함.\nO: BP 156/92, HR 78, RR 18. 양측 하지 오목부종 1+. Cr 7.8 mg/dL, BUN 92 mg/dL, K 5.2 mmol/L.\nA: 만성 콩팥병(5기)(N18.5), 투석 시작 준비 중.\nP: 저칼륨 식이를 유지하고, 투석 혈관 접근로 상담을 의뢰한다. 내일 아침 전해질을 다시 확인한다."
+    }
+  ],
+  "admission_note": {
+    "written_at": "2026-10-19T16:00",
+    "text": "주호소: 2주 전부터 다리 붓기, 식욕 저하, 피로감.\n현병력: 고혈압과 2형 당뇨병으로 신장내과 외래 추적 중인 63세 남자로, 2주 전부터 다리 붓기와 식욕 저하가 심해져 투석 시작 평가를 위해 입원함.\n진찰: BP 162/94, HR 80, RR 18. 양측 하지 오목부종 2+.\n계획: 전해질과 신기능을 추적하고, 투석 혈관 접근로를 준비한다."
+  },
+  "er_note": null,
+  "labs": [
+    {"name": "Cr", "value": 7.6, "unit": "mg/dL", "ref_low": 0.7, "ref_high": 1.3, "measured_at": "2026-10-19T16:00"},
+    {"name": "BUN", "value": 88, "unit": "mg/dL", "ref_low": 8, "ref_high": 23, "measured_at": "2026-10-19T16:00"},
+    {"name": "K", "value": 4.9, "unit": "mmol/L", "ref_low": 3.5, "ref_high": 5.0, "measured_at": "2026-10-19T16:00"},
+    {"name": "Cr", "value": 7.8, "unit": "mg/dL", "ref_low": 0.7, "ref_high": 1.3, "measured_at": "2026-10-20T06:00"},
+    {"name": "BUN", "value": 92, "unit": "mg/dL", "ref_low": 8, "ref_high": 23, "measured_at": "2026-10-20T06:00"},
+    {"name": "K", "value": 5.2, "unit": "mmol/L", "ref_low": 3.5, "ref_high": 5.0, "measured_at": "2026-10-20T06:00"},
+    {"name": "Cr", "value": 8.1, "unit": "mg/dL", "ref_low": 0.7, "ref_high": 1.3, "measured_at": "2026-10-21T06:00"},
+    {"name": "BUN", "value": 95, "unit": "mg/dL", "ref_low": 8, "ref_high": 23, "measured_at": "2026-10-21T06:00"},
+    {"name": "K", "value": 6.1, "unit": "mmol/L", "ref_low": 3.5, "ref_high": 5.0, "measured_at": "2026-10-21T06:00"}
+  ],
+  "readings": [
+    {"exam": "심전도", "read_at": "2026-10-19T16:30", "finding": "정상 동율동, 특이 ST-T 변화 없음"},
+    {"exam": "심전도", "read_at": "2026-10-21T07:00", "finding": "정상 동율동, 전흉부 유도에서 뾰족한 T파"}
+  ],
+  "prescriptions": [
+    {"drug": "amlodipine", "dose": "10mg", "route": "PO", "frequency": "qd", "started_at": "2026-10-19T17:00", "stopped_at": null},
+    {"drug": "furosemide", "dose": "40mg", "route": "PO", "frequency": "bid", "started_at": "2026-10-19T17:00", "stopped_at": null},
+    {"drug": "calcium polystyrene sulfonate", "dose": "5g", "route": "PO", "frequency": "tid", "started_at": "2026-10-21T08:00", "stopped_at": null}
+  ]
+}

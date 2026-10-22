@@ -1,0 +1,43 @@
+{
+  "patient_id": "P015",
+  "age": 76,
+  "sex": "F",
+  "admitted_at": "2026-10-19T13:00",
+  "underlying_diseases": ["2형 당뇨병"],
+  "allergies": [],
+  "diagnoses": [
+    {"code": "E11.9", "name": "합병증을 동반하지 않은 2형 당뇨병"},
+    {"code": "J18.9", "name": "상세불명의 폐렴"}
+  ],
+  "progress_notes": [
+    {
+      "written_at": "2026-10-20T14:00",
+      "text": "S: 기침은 줄었으나 식사량이 평소의 절반 정도라고 함.\nO: BT 37.1℃, BP 130/76, HR 82, RR 18, SpO2 96%(room air). 공복 혈당 182 mg/dL.\nA: 상세불명의 폐렴(J18.9), 합병증을 동반하지 않은 2형 당뇨병(E11.9).\nP: ceftriaxone 을 유지하고, insulin glargine 을 유지하며 식사량과 혈당을 함께 본다."
+    }
+  ],
+  "admission_note": {
+    "written_at": "2026-10-19T14:00",
+    "text": "주호소: 4일 전부터 기침, 가래, 발열.\n현병력: 2형 당뇨병으로 insulin glargine 을 쓰는 76세 여자로, 4일 전부터 기침과 가래, 38.1℃ 발열이 있어 입원함.\n진찰: BT 38.0℃, BP 136/80, HR 98, RR 22, SpO2 93%(room air). 청진상 우하엽 수포음.\n계획: 정맥 항생제(ceftriaxone)를 시작하고 기존 insulin glargine 20단위를 유지한다."
+  },
+  "er_note": {
+    "written_at": "2026-10-19T11:00",
+    "text": "기침, 가래, 발열로 내원. BT 38.1℃, SpO2 93%. 흉부 X선 촬영 후 입원 결정."
+  },
+  "labs": [
+    {"name": "혈당", "value": 245, "unit": "mg/dL", "ref_low": 70, "ref_high": 110, "measured_at": "2026-10-19T12:00"},
+    {"name": "CRP", "value": 8.8, "unit": "mg/dL", "ref_low": 0, "ref_high": 0.5, "measured_at": "2026-10-19T12:00"},
+    {"name": "혈당", "value": 182, "unit": "mg/dL", "ref_low": 70, "ref_high": 110, "measured_at": "2026-10-20T06:00"},
+    {"name": "혈당", "value": 45, "unit": "mg/dL", "ref_low": 70, "ref_high": 110, "measured_at": "2026-10-21T04:30"},
+    {"name": "혈당", "value": 98, "unit": "mg/dL", "ref_low": 70, "ref_high": 110, "measured_at": "2026-10-21T05:00"},
+    {"name": "CRP", "value": 3.2, "unit": "mg/dL", "ref_low": 0, "ref_high": 0.5, "measured_at": "2026-10-21T06:00"}
+  ],
+  "readings": [
+    {"exam": "흉부 X선", "read_at": "2026-10-19T11:30", "finding": "우하엽 경화 소견"}
+  ],
+  "prescriptions": [
+    {"drug": "ceftriaxone", "dose": "2g", "route": "IV", "frequency": "q24h", "started_at": "2026-10-19T14:00", "stopped_at": null},
+    {"drug": "insulin glargine", "dose": "20단위", "route": "SC", "frequency": "qd", "started_at": "2026-10-19T21:00", "stopped_at": "2026-10-21T09:00"},
+    {"drug": "50% 포도당", "dose": "50mL", "route": "IV", "frequency": "1회", "started_at": "2026-10-21T04:35", "stopped_at": "2026-10-21T04:40"},
+    {"drug": "insulin glargine", "dose": "14단위", "route": "SC", "frequency": "qd", "started_at": "2026-10-21T09:00", "stopped_at": null}
+  ]
+}

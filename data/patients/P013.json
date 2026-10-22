@@ -1,0 +1,41 @@
+{
+  "patient_id": "P013",
+  "age": 61,
+  "sex": "M",
+  "admitted_at": "2026-10-19T14:00",
+  "underlying_diseases": ["만성 B형 간염"],
+  "allergies": [],
+  "diagnoses": [
+    {"code": "K74.6", "name": "기타 및 상세불명의 간경화"}
+  ],
+  "progress_notes": [
+    {
+      "written_at": "2026-10-20T14:00",
+      "text": "S: 배가 불러 숨이 조금 차다고 함.\nO: BT 37.0℃, BP 108/66, HR 86, RR 18. 복부 팽만, 이동성 둔탁음. 알부민 3.1 g/dL, 총빌리루빈 2.4 mg/dL.\nA: 기타 및 상세불명의 간경화(K74.6), 복수 증가.\nP: spironolactone 과 lactulose 를 유지하고, 내일 진단적 복수 천자를 시행한다."
+    }
+  ],
+  "admission_note": {
+    "written_at": "2026-10-19T15:00",
+    "text": "주호소: 2주 전부터 배가 점점 불러옴.\n현병력: 만성 B형 간염으로 외래 추적 중인 61세 남자로, 2주 전부터 복부 팽만이 심해져 입원함.\n진찰: BT 36.9℃, BP 112/68, HR 84. 복부 팽만, 이동성 둔탁음.\n계획: 이뇨제를 조절하고 복수 천자를 계획한다."
+  },
+  "er_note": null,
+  "labs": [
+    {"name": "알부민", "value": 3.3, "unit": "g/dL", "ref_low": 3.5, "ref_high": 5.2, "measured_at": "2026-10-19T15:00"},
+    {"name": "총빌리루빈", "value": 2.2, "unit": "mg/dL", "ref_low": 0.2, "ref_high": 1.2, "measured_at": "2026-10-19T15:00"},
+    {"name": "알부민", "value": 3.1, "unit": "g/dL", "ref_low": 3.5, "ref_high": 5.2, "measured_at": "2026-10-20T06:00"},
+    {"name": "총빌리루빈", "value": 2.4, "unit": "mg/dL", "ref_low": 0.2, "ref_high": 1.2, "measured_at": "2026-10-20T06:00"},
+    {"name": "알부민", "value": 2.6, "unit": "g/dL", "ref_low": 3.5, "ref_high": 5.2, "measured_at": "2026-10-21T06:00"},
+    {"name": "총빌리루빈", "value": 2.5, "unit": "mg/dL", "ref_low": 0.2, "ref_high": 1.2, "measured_at": "2026-10-21T06:00"},
+    {"name": "복수 다형핵백혈구", "value": 350, "unit": "/mm3", "ref_low": 0, "ref_high": 250, "measured_at": "2026-10-21T10:30"}
+  ],
+  "readings": [
+    {"exam": "복부 초음파", "read_at": "2026-10-19T17:00", "finding": "간 표면 결절성, 비장 비대, 다량의 복수"},
+    {"exam": "복수 배양", "read_at": "2026-10-21T11:00", "finding": "배양 진행 중, 결과 대기"}
+  ],
+  "prescriptions": [
+    {"drug": "spironolactone", "dose": "100mg", "route": "PO", "frequency": "qd", "started_at": "2026-10-19T16:00", "stopped_at": null},
+    {"drug": "lactulose", "dose": "15mL", "route": "PO", "frequency": "tid", "started_at": "2026-10-19T16:00", "stopped_at": null},
+    {"drug": "entecavir", "dose": "0.5mg", "route": "PO", "frequency": "qd", "started_at": "2026-10-19T16:00", "stopped_at": null},
+    {"drug": "cefotaxime", "dose": "2g", "route": "IV", "frequency": "q8h", "started_at": "2026-10-21T12:00", "stopped_at": null}
+  ]
+}
