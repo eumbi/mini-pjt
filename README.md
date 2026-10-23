@@ -141,6 +141,6 @@ OutputGuard (새 제안 ≤ 5개, kcd9.csv 에 있는 코드·명칭만, 기존 
 - [src/guards.py](src/guards.py) — 가드레일 미들웨어
   - [src/guards.py:139](src/guards.py#L139) `InputGuard`, [src/guards.py:167](src/guards.py#L167) `PatientScope`, [src/guards.py:210](src/guards.py#L210) `OutputGuard`
 - [src/tracer.py:28](src/tracer.py#L28) — `FileTracer` 콜백
-- [src/server.py:121](src/server.py#L121) — `POST /query`
+- [src/server.py:130](src/server.py#L130) — `POST /query`
 - [evaluation/run_eval.py](evaluation/run_eval.py) — 자체 평가 ([evaluation/run_eval.py:65](evaluation/run_eval.py#L65) `JUDGE_PROMPT`, [evaluation/run_eval.py:342](evaluation/run_eval.py#L342) `run_ragas`)
 - [evaluation/test_queries.csv](evaluation/test_queries.csv) — 인-아웃 세트 20건 (positive 8 · negative 4 · edge 5 · guardrail 3)
