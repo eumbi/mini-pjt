@@ -1,11 +1,20 @@
 """API 서버. POST /query 하나로 질문을 받아 answer·contexts·trace 를 돌려준다."""
 
+import os
+
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from src.agent import run
 
 app = FastAPI()
+
+# 발표 시연용 화면(파일로 연 HTML)에서 부를 때만 켠다. 파일로 연 페이지의 Origin 은 "null" 이다.
+if os.getenv("DEMO_CORS") == "1":
+    app.add_middleware(
+        CORSMiddleware, allow_origins=["null"], allow_methods=["POST"], allow_headers=["Content-Type"]
+    )
 
 
 class QueryRequest(BaseModel):
