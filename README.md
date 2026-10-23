@@ -8,7 +8,7 @@
 - Day 2: RAG 하이브리드 검색 (필수 패턴 3) — `data/kcd9.csv` 전체를 BM25(kiwipiepy 토크나이저)와 벡터 검색(Titan Text Embeddings V2, Chroma)으로 나눠 찾고 `EnsembleRetriever` 로 합쳐 상위 10건을 돌려준다. 상위 결과와 앞 세 자리가 같은 코드(같은 분류)를 함께 돌려주고, 맞는 코드가 없으면 분류명·영문 명칭으로 다시 검색하게 한다(쿼리 확장)
 - Day 3: 도구 호출 에이전트 — `create_agent` 로 Agent 를 만들고, Agent 가 도구를 부를지·어떤 검색어로 부를지·어떤 상병을 고를지 판단한다
 - Day 4: 도메인 도구 — `get_patient_context`, `get_changes_since_last_note`, `search_kcd_codes` 3개. 도구 안에서는 LLM 을 부르지 않고 조회·비교·검색 결과만 돌려준다
-- Day 5: 미들웨어 가드레일 — `InputGuard`(정규식 + LLM 판별, 고정 거절 문구), `PatientScope`(질문에 처음 나온 환자 외 조회 차단), `OutputGuard`(after_model 에서 새 제안 5개 이하·KCD-9 코드 여부를 코드로 검사)
+- Day 5: 미들웨어 가드레일 — `InputGuard`(정규식 + LLM 판별, 고정 거절 문구), `PatientScope`(질문에 처음 나온 환자 외 조회 차단), `OutputGuard`(after_model 에서 새 제안 5개 이하·KCD-9 코드 여부를 코드로 검사하고 명칭을 KCD-9 원문으로 맞춤, 기존 상병은 환자 데이터로 맞춤, 메모가 비면 S·신체 진찰을 '(메모에 없음)'으로 고정)
 - Day 7: 트레이스 (필수 패턴 11) — `FileTracer` 콜백이 도구 호출과 LLM 호출을 `trace.jsonl` 에 남기고, 같은 기록으로 응답의 `trace` 와 `contexts` 를 채운다. JSONL 에는 호출별 지연 시간(`latency_s`)과 LLM 토큰 수(`usage`)도 남긴다(1·2차 평가 뒤에 추가해 두 라운드 기록에는 없다)
 - Day 7: 평가 (필수 패턴 12) — 인-아웃 세트 20건을 LLM-as-Judge 로 판정하고, 코드 일치·제안 개수·KCD-9 여부·데이터에 없는 수치는 코드로 검사한다. RAGAS 4개 지표는 산출과 보고에만 쓴다
 
@@ -31,7 +31,7 @@ Agent (create_agent, Bedrock Claude Sonnet 4.6, temperature=0)
    ▼
 SoapFormatter (with_structured_output → SoapDraft)
    │
-OutputGuard (새 제안 ≤ 5개, kcd9.csv 에 있는 코드만)
+OutputGuard (새 제안 ≤ 5개, kcd9.csv 에 있는 코드·명칭만, 기존 상병 = 환자 데이터, 빈 메모면 S·신체 진찰 고정)
    │
    ▼
 {answer, contexts, trace}  ◀── FileTracer (trace.jsonl) 기록으로 trace·contexts 생성
@@ -135,12 +135,12 @@ OutputGuard (새 제안 ≤ 5개, kcd9.csv 에 있는 코드만)
   - [src/agent.py:67](src/agent.py#L67) — `SoapDraft` 구조화 출력 모델
   - [src/agent.py:95](src/agent.py#L95) — `SoapFormatter` (with_structured_output 으로 초안 정리)
 - [src/tools.py](src/tools.py) — 도메인 도구
-  - [src/tools.py:21](src/tools.py#L21) `get_patient_context`, [src/tools.py:62](src/tools.py#L62) `get_changes_since_last_note`, [src/tools.py:141](src/tools.py#L141) `search_kcd_codes`
+  - [src/tools.py:31](src/tools.py#L31) `get_patient_context`, [src/tools.py:71](src/tools.py#L71) `get_changes_since_last_note`, [src/tools.py:149](src/tools.py#L149) `search_kcd_codes`
 - [src/retriever.py](src/retriever.py) — RAG 파이프라인
-  - [src/retriever.py:116](src/retriever.py#L116) `EnsembleRetriever`, [src/retriever.py:125](src/retriever.py#L125) `search`, [src/retriever.py:141](src/retriever.py#L141) `same_category`
+  - [src/retriever.py:117](src/retriever.py#L117) `EnsembleRetriever`, [src/retriever.py:126](src/retriever.py#L126) `search`, [src/retriever.py:142](src/retriever.py#L142) `same_category`
 - [src/guards.py](src/guards.py) — 가드레일 미들웨어
-  - [src/guards.py:119](src/guards.py#L119) `InputGuard`, [src/guards.py:147](src/guards.py#L147) `PatientScope`, [src/guards.py:173](src/guards.py#L173) `OutputGuard`
-- [src/tracer.py:23](src/tracer.py#L23) — `FileTracer` 콜백
-- [src/server.py:114](src/server.py#L114) — `POST /query`
+  - [src/guards.py:139](src/guards.py#L139) `InputGuard`, [src/guards.py:167](src/guards.py#L167) `PatientScope`, [src/guards.py:210](src/guards.py#L210) `OutputGuard`
+- [src/tracer.py:28](src/tracer.py#L28) — `FileTracer` 콜백
+- [src/server.py:121](src/server.py#L121) — `POST /query`
 - [evaluation/run_eval.py](evaluation/run_eval.py) — 자체 평가 ([evaluation/run_eval.py:65](evaluation/run_eval.py#L65) `JUDGE_PROMPT`, [evaluation/run_eval.py:342](evaluation/run_eval.py#L342) `run_ragas`)
 - [evaluation/test_queries.csv](evaluation/test_queries.csv) — 인-아웃 세트 20건 (positive 8 · negative 4 · edge 5 · guardrail 3)

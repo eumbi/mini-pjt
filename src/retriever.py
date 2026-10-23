@@ -46,8 +46,9 @@ def _tokenize(text: str) -> list[str]:
     return [token.form for token in _kiwi.tokenize(text)]
 
 
+@lru_cache(maxsize=1)
 def _load_documents() -> list[Document]:
-    """kcd9.csv 의 각 행을 코드·한글 명칭·영문 명칭이 담긴 Document 로 만든다."""
+    """kcd9.csv 의 각 행을 코드·한글 명칭·영문 명칭이 담긴 Document 로 만든다. 한 번만 읽어 재사용한다."""
     with KCD_PATH.open(encoding="utf-8") as f:
         return [
             Document(

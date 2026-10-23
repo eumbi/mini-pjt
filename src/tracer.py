@@ -5,6 +5,7 @@
 
 import json
 import os
+import threading
 import time
 import uuid
 from datetime import datetime
@@ -35,28 +36,33 @@ class FileTracer(BaseCallbackHandler):
         self.metrics: list[dict] = []
         self._index: dict[uuid.UUID, int] = {}
         self._started: dict[uuid.UUID, float] = {}
+        # 도구가 병렬로 불리면 콜백이 여러 스레드에서 오므로 자리 잡기와 채우기를 잠근다
+        self._lock = threading.Lock()
 
     def _start(self, run_id: uuid.UUID, step: str, input: Any) -> None:
         """호출이 시작될 때 기록에 자리를 잡아 시작 순서를 지키고, 시작 시각을 잰다."""
-        self._index[run_id] = len(self.records)
-        self._started[run_id] = time.perf_counter()
-        self.records.append({"step": step, "input": input, "output": None})
-        self.metrics.append({})
+        with self._lock:
+            self._index[run_id] = len(self.records)
+            self._started[run_id] = time.perf_counter()
+            self.records.append({"step": step, "input": input, "output": None})
+            self.metrics.append({})
 
     def _end(self, run_id: uuid.UUID, output: Any, usage: dict | None = None) -> None:
         """호출이 끝나면 시작 때 잡은 자리에 출력을 채우고, 지연 시간과 토큰 수를 따로 적는다."""
-        if run_id not in self._index:
-            return
-        index = self._index.pop(run_id)
-        self.records[index]["output"] = output
-        self.metrics[index]["latency_s"] = round(time.perf_counter() - self._started.pop(run_id), 2)
-        if usage:
-            self.metrics[index]["usage"] = usage
+        with self._lock:
+            if run_id not in self._index:
+                return
+            index = self._index.pop(run_id)
+            self.records[index]["output"] = output
+            self.metrics[index]["latency_s"] = round(time.perf_counter() - self._started.pop(run_id), 2)
+            if usage:
+                self.metrics[index]["usage"] = usage
 
     def add(self, step: str, input: Any, output: Any) -> None:
         """콜백으로 잡히지 않는 단계(거절 등)를 같은 기록에 붙인다."""
-        self.records.append({"step": step, "input": input, "output": output})
-        self.metrics.append({})
+        with self._lock:
+            self.records.append({"step": step, "input": input, "output": output})
+            self.metrics.append({})
 
     def on_tool_start(self, serialized, input_str, *, run_id, inputs=None, **kwargs) -> None:
         """도구 이름을 step 으로, 도구 인자를 input 으로 기록한다."""

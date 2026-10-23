@@ -3,11 +3,12 @@
 입력: before_agent 에서 정규식 + LLM 판별로 인젝션·무관한 요청을 고정 문구로 거절하고,
       환자 ID 가 없으면 고정 안내 문구로 끝낸다.
 도구: 요청한 환자 외의 환자 ID 로 도구를 부르면 실행하지 않는다.
-출력: 새 제안이 KCD-9 에 있는 코드인지, 5개 이하인지 after_model 에서 코드로 검사하고,
-      메모가 비었으면 S 를 '(메모에 없음)'으로 고정한다.
+출력: 새 제안이 KCD-9 에 있는 코드인지, 5개 이하인지 after_model 에서 코드로 검사해 명칭을 KCD-9 원문으로 맞추고,
+      기존 상병을 환자 데이터로 맞추며, 메모가 비었으면 S 와 신체 진찰을 '(메모에 없음)'으로 고정한다.
 """
 
 import csv
+import json
 import re
 from pathlib import Path
 from typing import Any
@@ -34,8 +35,10 @@ OTHER_PATIENT = "요청한 환자 외의 환자 정보는 제공할 수 없습�
 NO_FABRICATION = "메모에 없는 S·신체 진찰 소견은 지어 쓰지 않고 '(메모에 없음)'으로 남깁니다."
 MISSING_DATA = "요청한 검사 결과({})는 데이터에 없어 O 에 넣지 않았습니다."
 NOT_IN_MEMO = "(메모에 없음)"
+EXAM_LINE = "신체 진찰:"
 
-PATIENT_ID = re.compile(r"\bP\d{3}\b")
+# 한글도 단어 문자라 \b 로는 "P001환자"를 못 찾으므로 앞뒤 영숫자만 막는다
+PATIENT_ID = re.compile(r"(?<![A-Za-z0-9])P\d{3}(?!\d)")
 # 메모에 없는 소견을 지어 채워 달라는 요청 (예: "정상 소견으로 그럴듯하게 채워줘")
 FABRICATION_REQUEST = re.compile(r"(진찰|소견).{0,30}(채워|지어|만들어|그럴듯)")
 MEMO = re.compile(r"메모\s*:(.*)", re.DOTALL)
@@ -62,7 +65,7 @@ blocked=false 예시
 - "환자 P012 / 메모: (없음)" (메모 빈칸. 환자 데이터만으로 초안을 만드는 정상 요청)"""
 
 with KCD_PATH.open(encoding="utf-8") as f:
-    KCD_CODES = {row["code"] for row in csv.DictReader(f)}
+    KCD_CODES = {row["code"]: row["name_ko"] for row in csv.DictReader(f)}
 
 
 class DraftState(AgentState):
@@ -103,12 +106,29 @@ def is_fabrication_request(text: str) -> bool:
     return bool(FABRICATION_REQUEST.search(text))
 
 
+def _patient_context_message(state: DraftState) -> ToolMessage | None:
+    """상태의 메시지 중 get_patient_context 도구 결과를 돌려준다. 부르지 않았으면 None 이다."""
+    return next(
+        (m for m in state["messages"] if isinstance(m, ToolMessage) and m.name == "get_patient_context"),
+        None,
+    )
+
+
 def is_unknown_patient(state: DraftState) -> bool:
     """get_patient_context 가 '데이터 없음: 등록되지 않은 환자'를 돌려줬는지 본다."""
-    return any(
-        isinstance(m, ToolMessage) and m.name == "get_patient_context" and m.content == NO_PATIENT_DATA
-        for m in state["messages"]
-    )
+    message = _patient_context_message(state)
+    return message is not None and message.content == NO_PATIENT_DATA
+
+
+def patient_diagnoses(state: DraftState) -> list[dict] | None:
+    """get_patient_context 결과의 현재 입력된 상병 목록을 돌려준다. 결과가 없거나 JSON 이 아니면 None 이다."""
+    message = _patient_context_message(state)
+    if message is None:
+        return None
+    try:
+        return json.loads(message.content)["diagnoses"]
+    except (TypeError, KeyError, json.JSONDecodeError):
+        return None
 
 
 def last_question(state: DraftState) -> str:
@@ -159,28 +179,48 @@ class PatientScope(AgentMiddleware):
         return handler(request)
 
 
+def check_existing(draft: Any, diagnoses: list[dict] | None) -> Any:
+    """기존 상병을 환자 데이터의 상병 목록으로 덮어쓴다. 환자 데이터가 없으면 그대로 둔다."""
+    if diagnoses is None:
+        return draft
+    return type(draft).model_validate({**draft.model_dump(), "existing_diagnoses": diagnoses})
+
+
 def check_suggestions(draft: Any) -> Any:
-    """새 제안에서 KCD-9 에 없는 코드와 기존 상병·중복 코드를 빼고, 앞에서부터 5개까지만 남긴다."""
+    """새 제안에서 KCD-9 에 없는 코드와 기존 상병·중복 코드를 빼고, 명칭을 KCD-9 원문으로 맞춰 앞에서부터 5개까지만 남긴다."""
     seen = {d.code for d in draft.existing_diagnoses}
     kept = []
     for suggestion in draft.new_suggestions:
         if suggestion.code in KCD_CODES and suggestion.code not in seen:
             seen.add(suggestion.code)
-            kept.append(suggestion)
+            kept.append(suggestion.model_copy(update={"name": KCD_CODES[suggestion.code]}))
     return draft.model_copy(update={"new_suggestions": kept[:MAX_SUGGESTIONS]})
 
 
+def blank_exam(o: str) -> str:
+    """O 의 첫 '신체 진찰:' 줄을 '신체 진찰: (메모에 없음)'으로 바꾼다. 그런 줄이 없으면 맨 앞에 붙인다."""
+    lines = o.splitlines()
+    for index, line in enumerate(lines):
+        if line.startswith(EXAM_LINE):
+            lines[index] = f"{EXAM_LINE} {NOT_IN_MEMO}"
+            return "\n".join(lines)
+    return f"{EXAM_LINE} {NOT_IN_MEMO}\n{o}"
+
+
 class OutputGuard(AgentMiddleware):
-    """SOAP 초안이 만들어진 뒤 새 제안 목록과 S 를 검사해 고치는 출력 가드레일."""
+    """SOAP 초안이 만들어진 뒤 상병 목록과 S·신체 진찰을 검사해 고치는 출력 가드레일."""
 
     state_schema = DraftState
 
     def after_model(self, state: DraftState, runtime) -> dict | None:
-        """초안이 있으면 새 제안을 걸러내고, 메모가 비었으면 S 를 '(메모에 없음)'으로 고정한다. 도구 호출 중이면 아무것도 하지 않는다."""
+        """초안이 있으면 기존 상병을 환자 데이터로 맞추고 새 제안을 걸러낸다.
+
+        메모가 비었으면 S 와 O 의 신체 진찰을 '(메모에 없음)'으로 고정한다. 도구 호출 중이면 아무것도 하지 않는다.
+        """
         draft = state.get("draft")
         if draft is None:
             return None
-        draft = check_suggestions(draft)
+        draft = check_suggestions(check_existing(draft, patient_diagnoses(state)))
         if not memo_text(last_question(state)):
-            draft = draft.model_copy(update={"s": NOT_IN_MEMO})
+            draft = draft.model_copy(update={"s": NOT_IN_MEMO, "o": blank_exam(draft.o)})
         return {"draft": draft}

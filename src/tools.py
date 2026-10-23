@@ -6,15 +6,25 @@ from pathlib import Path
 
 from langchain_core.tools import tool
 
+from src.guards import NO_PATIENT_DATA
 from src.retriever import same_category, search
 
 PATIENTS_DIR = Path(__file__).resolve().parent.parent / "data" / "patients"
 
 
-def _load_patient(patient_id: str) -> dict:
-    """환자 ID 에 해당하는 JSON 파일을 읽어 dict 로 돌려준다."""
+def _load_patient(patient_id: str) -> dict | None:
+    """환자 ID 에 해당하는 JSON 파일을 읽어 dict 로 돌려준다. 파일이 없으면 None 이다."""
     path = PATIENTS_DIR / f"{patient_id}.json"
+    if not path.exists():
+        return None
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _last_progress_note(patient: dict) -> dict | None:
+    """작성 시각이 가장 늦은 경과기록(직전 경과기록)을 돌려준다. 경과기록이 없으면 None 이다."""
+    if not patient["progress_notes"]:
+        return None
+    return max(patient["progress_notes"], key=lambda note: note["written_at"])
 
 
 @tool
@@ -27,12 +37,11 @@ def get_patient_context(patient_id: str) -> dict | str:
     (progress_note: 직전 경과기록, admission_note: 입원기록, er_note: 응급실 기록).
     등록되지 않은 환자 ID 면 '데이터 없음: 등록되지 않은 환자'를 돌려준다.
     """
-    if not (PATIENTS_DIR / f"{patient_id}.json").exists():
-        return "데이터 없음: 등록되지 않은 환자"
     patient = _load_patient(patient_id)
-    if patient["progress_notes"]:
+    if patient is None:
+        return NO_PATIENT_DATA
+    if last_note := _last_progress_note(patient):
         source = "progress_note"
-        last_note = max(patient["progress_notes"], key=lambda note: note["written_at"])
     elif patient.get("admission_note"):
         source, last_note = "admission_note", patient["admission_note"]
     else:
@@ -72,12 +81,11 @@ def get_changes_since_last_note(patient_id: str) -> dict | str:
     세 항목 중 변화가 없는 항목은 '변화 없음'으로 표시한다.
     등록되지 않은 환자 ID 면 '데이터 없음: 등록되지 않은 환자'를 돌려준다.
     """
-    if not (PATIENTS_DIR / f"{patient_id}.json").exists():
-        return "데이터 없음: 등록되지 않은 환자"
     patient = _load_patient(patient_id)
-    if patient["progress_notes"]:
-        baseline_source = "progress_note"
-        baseline_at = max(note["written_at"] for note in patient["progress_notes"])
+    if patient is None:
+        return NO_PATIENT_DATA
+    if last_note := _last_progress_note(patient):
+        baseline_source, baseline_at = "progress_note", last_note["written_at"]
     else:
         baseline_source, baseline_at = "admitted_at", patient["admitted_at"]
     baseline = _parse(baseline_at)

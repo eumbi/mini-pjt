@@ -71,14 +71,11 @@ def _changes_contexts(output: dict) -> list[dict]:
                 "text": f"{reading['exam']} ({reading['read_at']}): {reading['finding']}",
             }
         )
-    for order in medications.get("new", []):
-        contexts.append(
-            {"doc_id": f"{pid}/medication/{order['drug']}", "text": "신규: " + _order_text(order)}
-        )
-    for order in medications.get("stopped", []):
-        contexts.append(
-            {"doc_id": f"{pid}/medication/{order['drug']}", "text": "중단: " + _order_text(order)}
-        )
+    for label, key in (("신규", "new"), ("중단", "stopped")):
+        for order in medications.get(key, []):
+            contexts.append(
+                {"doc_id": f"{pid}/medication/{order['drug']}", "text": f"{label}: {_order_text(order)}"}
+            )
     for change in medications.get("changed", []):
         text = f"변경: {_order_text(change['before'])} → {_order_text(change['after'])}"
         contexts.append({"doc_id": f"{pid}/medication/{change['drug']}", "text": text})
@@ -94,20 +91,30 @@ def _kcd_contexts(output: dict) -> list[dict]:
 
 
 def _build_contexts(trace: list[dict]) -> list[dict]:
-    """trace 의 도구 기록에서 환자 데이터와 KCD 검색 결과를 contexts 로 모은다. 같은 doc_id 는 첫 것만 둔다."""
+    """trace 의 도구 기록에서 환자 데이터와 KCD 검색 결과를 contexts 로 모은다.
+
+    같은 doc_id 가 다시 나오면(예: 같은 Lab 이상치 2건) 내용이 다를 때만 첫 문서의 text 에 줄을 바꿔 이어 붙인다.
+    """
     builders = {
         "get_patient_context": _patient_contexts,
         "get_changes_since_last_note": _changes_contexts,
         "search_kcd_codes": _kcd_contexts,
     }
-    contexts, seen = [], set()
+    contexts, by_id, seen = [], {}, set()
     for record in trace:
         if record["step"] not in builders or not isinstance(record["output"], dict):
             continue
         for context in builders[record["step"]](record["output"]):
-            if context["doc_id"] not in seen:
-                seen.add(context["doc_id"])
+            key = (context["doc_id"], context["text"])
+            if key in seen:
+                continue
+            seen.add(key)
+            first = by_id.get(context["doc_id"])
+            if first is None:
+                by_id[context["doc_id"]] = context
                 contexts.append(context)
+            else:
+                first["text"] += "\n" + context["text"]
     return contexts
 
 
