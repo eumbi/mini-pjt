@@ -62,5 +62,7 @@
 ## M5. 제출
 - [x] T24. README.md (강의 §4-5 템플릿)
   - 확인: 활용 패턴·아키텍처·실행 방법·RAGAS·1·2차 통과율·회고·핵심 코드 위치가 모두 채워져 있다
+- [x] T24-1. FileTracer 에 호출별 지연 시간(latency_s)과 LLM 토큰 수(usage) 추가 (JSONL 에만, 응답 trace 는 세 키 유지)
+  - 확인: 1번 케이스 실행 후 JSONL 에 latency_s·usage 가 남고, 응답 trace 키는 step·input·output 뿐이다
 - [ ] T25. 클린 환경 재현과 푸시
   - 확인: 새 가상환경에서 requirements.txt 설치 후 1번 케이스가 /query 로 동작하고 원격 main 에 올라가 있다
