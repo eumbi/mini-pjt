@@ -6,7 +6,7 @@
 - Agent 생성은 langchain.agents 의 create_agent 를 쓴다
 - POST /query 서버는 FastAPI 엔드포인트 하나로 최소한만 둔다
 - answer 는 Pydantic 모델에 llm.with_structured_output 으로 담는다 (필수 패턴 1)
-- 트레이스는 콜백(FileTracer)으로 JSONL 파일에 남기고, 같은 기록으로 응답의 trace 를 채운다. LangSmith 는 쓰지 않는다 (필수 패턴 11)
+- 트레이스는 콜백(FileTracer)으로 JSONL 파일에 남기고, 같은 기록으로 응답의 trace 를 채운다 (필수 패턴 11)
 - 평가는 LLM-as-Judge 로 판정하고, RAGAS(context_recall, context_precision, faithfulness, answer_relevancy)는 지표 산출과 보고에만 쓴다 (필수 패턴 12)
 - 가드레일은 미들웨어로 붙인다. 입력은 정규식 + LLM 판별, 출력은 after_model 에서 코드 검사한다. 거절은 고정 문구로 한다
 - 도구 안에서는 LLM 을 부르지 않는다. 판단은 Agent 가 한다
