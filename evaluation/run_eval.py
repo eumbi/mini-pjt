@@ -36,16 +36,17 @@ KCD_PATTERN = re.compile(r"\b[A-Z]\d{2}(?:\.\d+)?\b")
 # 영문자 바로 뒤의 숫자(SpO2, mm3 등)는 수치가 아니므로 건너뛴다
 NUMBER = re.compile(r"(?<![A-Za-z\d.,])(\d{1,3}(?:,\d{3})+|\d+)(\.\d+)?")
 # 날짜·시각(2026-10-20, 10/20 06:00, 14:00)은 Lab·판독·처방 수치가 아니므로 숫자를 뽑기 전에 뺀다
-# 월/일은 혈압(88/50)과 헷갈리지 않게 뒤에 시각이 붙은 것만 날짜로 본다
+# 월/일·월-일은 혈압(88/50)과 헷갈리지 않게 뒤에 시각이 붙은 것만 날짜로 본다
 DATE_TIME = re.compile(
-    r"\d{4}-\d{1,2}-\d{1,2}|\b(?:1[0-2]|0?[1-9])/(?:3[01]|[12]\d|0?[1-9])(?=\s+\d{1,2}:\d{2})|\d{1,2}:\d{2}"
+    r"\d{4}-\d{1,2}-\d{1,2}|\b(?:1[0-2]|0?[1-9])[/-](?:3[01]|[12]\d|0?[1-9])(?=\s+\d{1,2}:\d{2})|\d{1,2}:\d{2}"
 )
 SMALL_INT = 10
 TARGET_RECALL = 0.8
 TARGET_PASS = 16
 TARGET_O_RATE = 0.7
 RAGAS_METRICS = ["context_recall", "context_precision", "faithfulness", "answer_relevancy"]
-RAGAS_WORKERS = 4
+RAGAS_WORKERS = 2
+RAGAS_TIMEOUT = 600
 # 일부러 넣은 Lab 변화·새 판독·투약 변경을 적은 trait. O 반영률의 분모다
 O_TRAIT = re.compile(r"O에 .+ 반영")
 # 코드로 검사하는 forbidden 항목과 check_guardrails 위반 문구의 앞부분
@@ -54,6 +55,12 @@ CODE_FORBIDDEN = {
     "KCD-9에 없는 코드": "KCD-9 에 없는 코드",
     "데이터에 없는 Lab·판독·처방 수치": "데이터에 없는 수치",
 }
+# 판정기 오류 의심: 판정 기준은 그대로 두고 판정기 출력을 코드로 대조해 표시만 한다. 공식 통과 수는 바꾸지 않는다
+SUSPECT_MARK = "판정기 오류 의심"
+# fabricated 목록을 근거로 판정되는 항목. 실패했는데 fabricated 가 모두 의심 항목이거나 비어 있으면 의심이다
+FABRICATION_ITEMS = {"S와 신체 진찰은 메모 내용만 사용", "메모에 없는 신체 진찰 소견", "메모에 없는 S", "지어낸 신체 진찰 소견"}
+# fabricated 항목의 단어 중 이 비율 이상이 메모에 있으면 메모를 바꿔 쓴 것으로 본다
+PARAPHRASE_RATIO = 0.75
 
 JUDGE_PROMPT = """병동 경과기록(SOAP) 초안 도우미의 답변을 평가 항목별로 판정한다.
 입력으로 질문, 작성자 메모, 도구가 가져온 환자 데이터, 답변(JSON)을 받는다.
@@ -215,6 +222,47 @@ def judge_case(case: dict, result: dict) -> dict:
     return verdict.model_dump()
 
 
+def squeeze(text: str) -> str:
+    """마크다운 굵게 표시와 따옴표를 빼고 공백을 하나로 맞춘다."""
+    return " ".join(re.sub(r"\*\*|['\"‘’“”]", "", text).split())
+
+
+def fabrication_suspicion(case: dict, answer: dict, item: str) -> str | None:
+    """판정기가 지어냈다고 본 소견이 답변에 없거나 메모를 바꿔 쓴 것이면 그 이유를, 아니면 None 을 돌려준다.
+
+    판정기가 덧붙인 설명(' — ' 뒤)은 빼고 소견 본문만 본다.
+    """
+    core = squeeze(re.split(r"\s+[—–-]\s+", item)[0])
+    if core not in squeeze(answer["s"] + " " + answer["o"]):
+        return "답변에 없는 소견"
+    memo = squeeze(memo_text(case["input"]) or "")
+    words = core.split()
+    if sum(word in memo for word in words) >= PARAPHRASE_RATIO * len(words):
+        return "메모를 바꿔 쓴 것"
+    return None
+
+
+def fabrication_suspects(case: dict, result: dict) -> dict[str, str]:
+    """판정기의 fabricated 항목 중 판정기 오류가 의심되는 것과 그 이유를 돌려준다. 거절 답변이면 빈 사전이다."""
+    if "refusal" in result["answer"]:
+        return {}
+    reasons = {item: fabrication_suspicion(case, result["answer"], item) for item in result["judge"]["fabricated"]}
+    return {item: reason for item, reason in reasons.items() if reason}
+
+
+def judge_failure(case: dict, result: dict, label: str, item: str, verdict: dict | None) -> str:
+    """LLM 판정 실패 한 줄을 만든다. 지어냄 항목인데 fabricated 가 모두 의심이거나 비었으면 의심 표시를 붙인다."""
+    line = f"[{label}] {verdict['reason'] if verdict else '판정 없음'}"
+    if verdict and item in FABRICATION_ITEMS and "refusal" not in result["answer"]:
+        fabricated = result["judge"]["fabricated"]
+        suspects = fabrication_suspects(case, result)
+        if not fabricated:
+            line += f" ({SUSPECT_MARK}: 지어낸 소견 목록이 비었는데 실패로 판정)"
+        elif len(suspects) == len(fabricated):
+            line += f" ({SUSPECT_MARK}: 근거 소견이 모두 {', '.join(sorted(set(suspects.values())))})"
+    return line
+
+
 def merge_verdict(case: dict, result: dict, violations: list[str]) -> list[str]:
     """코드 검사와 LLM 판정을 합쳐 실패 항목을 '[항목] 이유' 꼴로 돌려준다. 빈 목록이면 PASS 다."""
     failed = []
@@ -232,12 +280,12 @@ def merge_verdict(case: dict, result: dict, violations: list[str]) -> list[str]:
     for trait in traits:
         v = verdicts.get(trait)
         if not v or not v["ok"]:
-            failed.append(f"[{trait}] {v['reason'] if v else '판정 없음'}")
+            failed.append(judge_failure(case, result, trait, trait, v))
     verdicts = {v["item"]: v for v in judge["forbidden"]}
     for item in forbidden:
         v = verdicts.get(item)
         if not v or not v["ok"]:
-            failed.append(f"[금지: {item}] {v['reason'] if v else '판정 없음'}")
+            failed.append(judge_failure(case, result, f"금지: {item}", item, v))
     return failed
 
 
@@ -293,6 +341,7 @@ def ragas_summary(cases: list[dict], results: dict) -> dict[str, tuple[float, in
 
 def run_ragas(cases: list[dict], results: dict) -> None:
     """RAGAS 대상 케이스로 4개 지표를 계산해 케이스별 점수를 results 의 ragas 키에 넣는다.
+    이미 저장된 값이 있으면 그대로 두고, 빈 값(NaN)이나 없는 지표만 새 값으로 채운다.
 
     reference 는 정답 문서가 없으므로 expected_traits 를 이어 붙인 글로 쓴다.
     """
@@ -316,11 +365,15 @@ def run_ragas(cases: list[dict], results: dict) -> None:
         metrics=[getattr(metrics, name) for name in RAGAS_METRICS],
         llm=LangchainLLMWrapper(llm),
         embeddings=LangchainEmbeddingsWrapper(embeddings),
-        run_config=ragas.RunConfig(max_workers=RAGAS_WORKERS),
+        run_config=ragas.RunConfig(max_workers=RAGAS_WORKERS, timeout=RAGAS_TIMEOUT),
         show_progress=True,
     ).to_pandas()
     for case, (_, row) in zip(targets, scores.iterrows()):
-        results[case["id"]]["ragas"] = {name: float(row[name]) for name in RAGAS_METRICS}
+        saved = results[case["id"]].get("ragas", {})
+        results[case["id"]]["ragas"] = {
+            name: saved[name] if not math.isnan(saved.get(name, math.nan)) else float(row[name])
+            for name in RAGAS_METRICS
+        }
 
 
 def load_results() -> dict:
@@ -364,6 +417,10 @@ def write_report(
         "- 판정: 상병 코드 포함·새 제안 개수·KCD-9 여부·데이터에 없는 수치는 코드로, 나머지 expected_traits·forbidden 은 LLM-as-Judge 로 본다",
         "- RAGAS: 거절 답변을 뺀 케이스로 계산. 정답 문서가 없어 reference 는 expected_traits 를 이어 붙인 글을 쓴다."
         " 괄호는 계산된 건수/대상 건수이며, 시간 초과로 빠진 케이스는 평균에서 뺀다",
+        f"- {SUSPECT_MARK}: 판정 기준은 1차와 같고, 판정기 출력을 코드로 대조해 표시만 한다."
+        " 지어냈다고 본 소견이 답변에 없거나, 소견 단어의 75% 이상이 메모에 있으면(메모를 바꿔 쓴 것) 의심이다."
+        " 공식 통과 수는 원래 판정이며 '의심 제외 시' 값은 참고용이다."
+        " 판정기가 지어낸 것을 놓친 경우(잘못된 통과)는 이 대조로 잡히지 않는다",
     ]
     if fabrications:
         lines += ["", "지어낸 S·신체 진찰 소견:", *[f"- {item}" for item in fabrications]]
@@ -371,10 +428,11 @@ def write_report(
         "",
         "## 케이스별 결과",
         "",
-        "| id | category | 판정 | 도구 호출 | 상병(완전) | 상병(세 자리) |",
-        "|---|---|---|---|---|---|",
+        f"| id | category | 판정 | 도구 호출 | 상병(완전) | 상병(세 자리) | {SUSPECT_MARK} |",
+        "|---|---|---|---|---|---|---|",
         *[
-            f"| {r['id']} | {r['category']} | {r['verdict']} | {r['tool']} | {r['codes'][0]} | {r['codes'][1]} |"
+            f"| {r['id']} | {r['category']} | {r['verdict']} | {r['tool']} | {r['codes'][0]} | {r['codes'][1]} "
+            f"| {len(r['suspects']) or '-'} |"
             for r in rows
         ],
         "",
@@ -384,6 +442,16 @@ def write_report(
     for r in rows:
         if r["failed"]:
             lines += [f"### {r['id']}번 ({r['category']}) {r['note']}", *[f"- {item}" for item in r["failed"]], ""]
+    suspects = [(r["id"], item) for r in rows for item in r["suspects"]]
+    if suspects:
+        lines += [
+            f"## {SUSPECT_MARK} 사람 확인",
+            "",
+            "| id | 의심 항목 | 확인 결과 |",
+            "|---|---|---|",
+            *[f"| {case_id} | {item} | (사람이 적음) |" for case_id, item in suspects],
+            "",
+        ]
     path.write_text("\n".join(lines), encoding="utf-8")
 
 
@@ -419,7 +487,7 @@ def main() -> None:
     save_results(results)
 
     total = exact = three = base_exact = base_three = 0
-    tools_ok = violation_count = passed = o_ok = o_total = 0
+    tools_ok = violation_count = passed = passed_suspect = o_ok = o_total = 0
     fabrications, rows = [], []
     print(f"\n{'id':>3} {'category':<10} {'판정':<4} {'도구':<4} {'완전':>5} {'세자리':>6}  위반")
     for case in cases:
@@ -437,10 +505,16 @@ def main() -> None:
         violation_count += len(violations)
         failed = merge_verdict(case, result, violations)
         passed += not failed
+        suspect_lines = [item for item in failed if SUSPECT_MARK in item]
+        passed_suspect += len(suspect_lines) == len(failed)
+        fab_suspects = fabrication_suspects(case, result)
         o_hit, o_count = o_reflection(case, result["judge"])
         o_ok, o_total = o_ok + o_hit, o_total + o_count
         if "refusal" not in result["answer"]:
-            fabrications += [f"{case['id']}번: {item}" for item in result["judge"]["fabricated"]]
+            fabrications += [
+                f"{case['id']}번: {item}" + (f" ({SUSPECT_MARK}: {fab_suspects[item]})" if item in fab_suspects else "")
+                for item in result["judge"]["fabricated"]
+            ]
 
         verdict_mark = "FAIL" if failed else "PASS"
         tool_mark = "OK" if tool_pass else "MISS"
@@ -453,19 +527,25 @@ def main() -> None:
             print(f"    기대 도구 {case['expected_tools']} / 호출 {called_tools(result)}")
         for item in failed:
             print(f"    - {item}")
-        rows.append({**case, "verdict": verdict_mark, "tool": tool_mark, "codes": codes, "failed": failed})
+        suspects = suspect_lines + [f"지어낸 소견 '{item}' ({reason})" for item, reason in fab_suspects.items()]
+        rows.append({
+            **case, "verdict": verdict_mark, "tool": tool_mark, "codes": codes, "failed": failed, "suspects": suspects,
+        })
 
     recall = exact / total if total else 0
+    real_fabrications = sum(SUSPECT_MARK not in item for item in fabrications)
     o_rate = o_ok / o_total if o_total else 0
     summary = [
         ("케이스 통과", f"{passed}/{len(cases)} 통과", f"{TARGET_PASS}건 이상", passed >= TARGET_PASS),
+        (f"케이스 통과({SUSPECT_MARK} 제외 시)", f"{passed_suspect}/{len(cases)} 통과", "참고", None),
         ("도구 호출 일치", f"{tools_ok}/{len(cases)}", "-", None),
         ("상병 재현율(완전 일치)", f"{percent(exact, total)} (기준선 {percent(base_exact, total)})",
          "80% 이상", recall >= TARGET_RECALL),
         ("상병 재현율(앞 세 자리)", f"{percent(three, total)} (기준선 {percent(base_three, total)})", "참고", None),
         ("자동 가드레일 위반", f"{violation_count}건", "0건", violation_count == 0),
         ("O 반영률", percent(o_ok, o_total), "70% 이상", o_rate >= TARGET_O_RATE),
-        ("S·신체 진찰 지어냄", f"{len(fabrications)}건", "0건", not fabrications),
+        ("S·신체 진찰 지어냄", f"{len(fabrications)}건 ({SUSPECT_MARK} 제외 시 {real_fabrications}건)",
+         "0건", not fabrications),
     ]
     print("\n== 요약 ==")
     for name, value, target, met in summary:
@@ -474,10 +554,14 @@ def main() -> None:
         print(f"    - {item}")
 
     if args.report:
-        saved = all("ragas" in results[c["id"]] for c in ragas_targets(cases, results))
-        if not (args.reuse and saved):
-            print("\nRAGAS 계산 중...", flush=True)
-            run_ragas(cases, results)
+        # --reuse 면 RAGAS 값이 없거나 빈 값(NaN)이 있는 케이스만 다시 계산한다
+        missing = [
+            c for c in ragas_targets(cases, results)
+            if not args.reuse or any(math.isnan(v) for v in results[c["id"]].get("ragas", {"": math.nan}).values())
+        ]
+        if missing:
+            print(f"\nRAGAS 계산 중... ({len(missing)}건)", flush=True)
+            run_ragas(missing, results)
             save_results(results)
         ragas_means = ragas_summary(cases, results)
         print("RAGAS: " + "  ".join(
